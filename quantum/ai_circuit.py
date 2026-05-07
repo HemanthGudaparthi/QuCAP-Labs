@@ -1,6 +1,9 @@
 """
 AI-driven quantum circuit builder.
 
+Uses Claude (claude-opus-4-7) when ANTHROPIC_API_KEY is set.
+Falls back to heuristic generation when the key is absent or the call fails.
+
 Follows the workflow diagram:
   1. build(research)        → produces a QuantumCircuit (QASM string)
   2. check_theoretical()    → validates the circuit conceptually
@@ -10,8 +13,42 @@ Follows the workflow diagram:
 
 import json
 import math
+import os
 import re
 from dataclasses import dataclass, field
+
+try:
+    import anthropic as _anthropic
+    _HAS_ANTHROPIC = True
+except ImportError:
+    _HAS_ANTHROPIC = False
+
+_MODEL = "claude-opus-4-7"
+
+_SYSTEM_PROMPT = """\
+You are a quantum computing expert. Given a research title and equations, \
+generate a valid OpenQASM 3.0 quantum circuit, then assess it.
+
+Respond with ONLY a JSON object — no prose, no markdown fences:
+{
+  "qasm": "<full OpenQASM 3.0 circuit string>",
+  "theoretically_correct": true|false,
+  "is_quantum_application": true|false,
+  "ai_confidence": <float 0.0-1.0>,
+  "notes": "<brief explanation>",
+  "n_qubits": <int>,
+  "gates": [<gate name strings>]
+}
+
+Rules:
+- Use OPENQASM 3.0; include "stdgates.inc";
+- Include qubit and bit declarations, gate operations, and a measurement.
+- theoretically_correct: true only if the circuit is well-formed and the \
+  gates are appropriate for the equations.
+- is_quantum_application: true if the circuit represents a meaningful \
+  standalone quantum application (not just a demo).
+- ai_confidence: your confidence in the generated circuit (0.0–1.0).
+"""
 
 
 @dataclass
@@ -28,20 +65,81 @@ class CircuitResult:
 
 def build_circuit(title: str, equations: str, prior_qasm: str | None = None) -> CircuitResult:
     """
-    Parse equations to infer circuit structure, then generate OpenQASM 3.
-
-    `prior_qasm` is set during the "extend" loop so the AI can build
-    upon existing results rather than starting from scratch.
+    Build a quantum circuit for the given research title and equations.
+    Uses Claude when ANTHROPIC_API_KEY is set; falls back to heuristics otherwise.
+    `prior_qasm` triggers extension mode (build upon existing results).
     """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key and _HAS_ANTHROPIC:
+        try:
+            return _build_with_claude(title, equations, prior_qasm, api_key)
+        except Exception as exc:
+            print(f"[ai_circuit] Claude call failed ({exc}); falling back to heuristics.")
+
+    return _build_heuristic(title, equations, prior_qasm)
+
+
+def extend_circuit(prior_qasm: str, result_counts: dict,
+                   title: str, equations: str) -> CircuitResult:
+    """Build upon an existing circuit using the outcome of a prior run."""
+    return build_circuit(title, equations, prior_qasm=prior_qasm)
+
+
+# ─── Claude backend ───────────────────────────────────────────────────────────
+
+def _build_with_claude(title: str, equations: str,
+                       prior_qasm: str | None, api_key: str) -> CircuitResult:
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    user_content = f"Research title: {title}\n\nEquations:\n{equations or '(none provided)'}"
+    if prior_qasm:
+        user_content += f"\n\nExtend this existing circuit (add layers before the final measurement):\n{prior_qasm}"
+
+    with client.messages.stream(
+        model=_MODEL,
+        max_tokens=4096,
+        thinking={"type": "adaptive"},
+        system=_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_content}],
+    ) as stream:
+        message = stream.get_final_message()
+
+    raw = ""
+    for block in message.content:
+        if block.type == "text":
+            raw = block.text.strip()
+            break
+
+    # Strip accidental markdown fences if Claude added them.
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+
+    data = json.loads(raw)
+
+    return CircuitResult(
+        qasm                   = data["qasm"],
+        metadata               = {"n_qubits": data.get("n_qubits", 2),
+                                  "gates":    data.get("gates", [])},
+        theoretically_correct  = bool(data.get("theoretically_correct", False)),
+        is_quantum_application = bool(data.get("is_quantum_application", False)),
+        ai_confidence          = float(data.get("ai_confidence", 0.0)),
+        notes                  = data.get("notes", ""),
+    )
+
+
+# ─── Heuristic fallback ───────────────────────────────────────────────────────
+
+def _build_heuristic(title: str, equations: str,
+                     prior_qasm: str | None) -> CircuitResult:
     n_qubits, gates = _analyze_equations(equations)
 
     if prior_qasm:
-        # Extension: append new gate layers to the prior circuit.
-        qasm = _extend_qasm(prior_qasm, gates)
-        notes = "Extended from prior circuit."
+        qasm  = _extend_qasm(prior_qasm, gates)
+        notes = "Extended from prior circuit (heuristic fallback)."
     else:
-        qasm = _generate_qasm(n_qubits, gates)
-        notes = "New circuit generated from equations."
+        qasm  = _generate_qasm(n_qubits, gates)
+        notes = "New circuit generated from equations (heuristic fallback)."
 
     correct, confidence = _check_theoretical(qasm, equations)
     is_app              = _is_quantum_application(qasm, title)
@@ -56,26 +154,14 @@ def build_circuit(title: str, equations: str, prior_qasm: str | None = None) -> 
     )
 
 
-def extend_circuit(prior_qasm: str, result_counts: dict,
-                   title: str, equations: str) -> CircuitResult:
-    """Build upon an existing circuit using the outcome of a prior run."""
-    return build_circuit(title, equations, prior_qasm=prior_qasm)
-
-
-# ─── Internals ────────────────────────────────────────────────────────────────
-
 def _analyze_equations(equations: str) -> tuple[int, list[str]]:
-    """
-    Heuristic: count unique variables as qubits; map operators to gates.
-    Replace this with a real ML/LLM call for production use.
-    """
     if not equations:
         return 2, ["h", "cx"]
 
     variables = set(re.findall(r'\b[a-zA-Z]\b', equations))
     n_qubits  = max(2, min(len(variables), 10))
 
-    gates = ["h"]   # superposition layer always present
+    gates = ["h"]
     if "∑" in equations or "sum" in equations.lower():
         gates.append("qft")
     if "×" in equations or "*" in equations or "·" in equations:
@@ -98,35 +184,27 @@ def _generate_qasm(n_qubits: int, gates: list[str]) -> str:
         f"bit[{n_qubits}] c;",
     ]
 
-    # Hadamard layer — superposition
     for i in range(n_qubits):
         lines.append(f"h q[{i}];")
 
-    # Entanglement layer
     if "cx" in gates or "ccx" in gates:
         for i in range(n_qubits - 1):
             lines.append(f"cx q[{i}], q[{i+1}];")
 
-    # Rotation layer
     if "ry" in gates:
         angle = round(math.pi / 4, 6)
         for i in range(n_qubits):
             lines.append(f"ry({angle}) q[{i}];")
 
     if "ccx" in gates and n_qubits >= 3:
-        lines.append(f"ccx q[0], q[1], q[2];")
+        lines.append("ccx q[0], q[1], q[2];")
 
-    # Measurement
-    lines.append(f"c = measure q;")
-
+    lines.append("c = measure q;")
     return "\n".join(lines)
 
 
 def _extend_qasm(prior_qasm: str, new_gates: list[str]) -> str:
-    """Append a new gate layer before the measurement in an existing circuit."""
-    lines = prior_qasm.strip().splitlines()
-
-    # Strip existing measurement line so we can re-append it last.
+    lines         = prior_qasm.strip().splitlines()
     measure_lines = [l for l in lines if l.strip().startswith("c =")]
     body          = [l for l in lines if not l.strip().startswith("c =")]
 
@@ -150,10 +228,6 @@ def _extend_qasm(prior_qasm: str, new_gates: list[str]) -> str:
 
 
 def _check_theoretical(qasm: str, equations: str) -> tuple[bool, float]:
-    """
-    Lightweight theoretical-correctness check.
-    Production: replace with a proper formal verifier or LLM call.
-    """
     issues = 0
     if "OPENQASM" not in qasm:
         issues += 1
@@ -168,10 +242,6 @@ def _check_theoretical(qasm: str, equations: str) -> tuple[bool, float]:
 
 
 def _is_quantum_application(qasm: str, title: str) -> bool:
-    """
-    Decides whether the circuit constitutes a standalone quantum application.
-    Heuristic: entanglement + measurement + title implies application intent.
-    """
     has_entanglement = "cx" in qasm or "ccx" in qasm or "cz" in qasm
     has_measurement  = "measure" in qasm or "c =" in qasm
     app_keywords     = {"application", "app", "system", "platform", "solver", "optimizer"}

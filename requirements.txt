@@ -7,6 +7,9 @@ python-dotenv>=1.0.0
 bcrypt>=4.1.0
 sqlalchemy>=2.0.0
 
+# Claude AI (circuit generation — falls back to heuristics without ANTHROPIC_API_KEY)
+anthropic>=0.40.0
+
 # IBM Quantum (electron-based architecture)
 qiskit>=1.1.0
 qiskit-ibm-runtime>=0.22.0
