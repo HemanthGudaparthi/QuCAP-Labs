@@ -1,0 +1,17 @@
+.env
+*.db
+*.sqlite3
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.log
+credentials/*.json
+ibm_credentials.json
+gdrive_credentials.json
+instance/
