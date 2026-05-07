@@ -250,16 +250,34 @@ def create_app(config_class=Config):
             return jsonify({"error": err}), 400
 
         audit(get_jwt_identity(), "CIRCUIT_BUILT", "circuit", qc.id,
-              {"version": qc.version, "theoretically_correct": qc.theoretically_correct})
+              {"version": qc.version, "theoretically_correct": qc.theoretically_correct,
+               "is_quantum_application": qc.is_quantum_application})
 
-        return jsonify({
+        response = {
             "circuit_id":             qc.id,
             "version":                qc.version,
             "theoretically_correct":  qc.theoretically_correct,
             "is_quantum_application": qc.is_quantum_application,
             "ai_confidence":          qc.ai_confidence,
             "qasm_preview":           qc.circuit_qasm[:300],
-        }), 201
+        }
+
+        if not qc.is_quantum_application:
+            from models import QuantumExperiment, Research
+            from quantum.ai_circuit import suggest_classical_approach
+            exp = QuantumExperiment.query.get(exp_id)
+            r   = Research.query.get(exp.research_id) if exp else None
+            suggestion = suggest_classical_approach(
+                r.title     if r else "",
+                r.equations if r else "",
+            )
+            response["warning"] = (
+                "This research does not appear to require quantum hardware. "
+                "It can likely be solved more efficiently on a regular computer."
+            )
+            response["classical_suggestion"] = suggestion
+
+        return jsonify(response), 201
 
     @app.route("/api/quantum/experiments/<int:exp_id>/run", methods=["POST"])
     @researcher_required

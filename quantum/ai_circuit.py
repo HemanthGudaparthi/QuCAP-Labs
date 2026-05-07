@@ -25,6 +25,21 @@ except ImportError:
 
 _MODEL = "claude-opus-4-7"
 
+_CLASSICAL_SYSTEM = """\
+You are a computer science expert. Given a research title and equations, \
+explain why this problem does not need quantum computing and suggest the \
+best classical approach.
+
+Respond with ONLY a JSON object — no prose, no markdown fences:
+{
+  "reason": "<one sentence: why quantum hardware adds no advantage here>",
+  "approach": "<name of the recommended classical method>",
+  "libraries": ["<lib1>", "<lib2>"],
+  "example_sketch": "<concise Python code sketch, 8-15 lines>",
+  "documentation_links": ["<url1>", "<url2>"]
+}
+"""
+
 _SYSTEM_PROMPT = """\
 You are a quantum computing expert. Given a research title and equations, \
 generate a valid OpenQASM 3.0 quantum circuit, then assess it.
@@ -85,6 +100,24 @@ def extend_circuit(prior_qasm: str, result_counts: dict,
     return build_circuit(title, equations, prior_qasm=prior_qasm)
 
 
+def suggest_classical_approach(title: str, equations: str) -> dict:
+    """
+    When a circuit is flagged as not a quantum application, suggest how the
+    same problem can be solved on a regular computer.
+
+    Uses Claude when ANTHROPIC_API_KEY is set; falls back to keyword heuristics.
+    Returns a dict with keys: reason, approach, libraries, example_sketch,
+    documentation_links.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key and _HAS_ANTHROPIC:
+        try:
+            return _suggest_classical_with_claude(title, equations, api_key)
+        except Exception as exc:
+            print(f"[ai_circuit] Classical suggestion via Claude failed ({exc}); using heuristic.")
+    return _suggest_classical_heuristic(title, equations)
+
+
 # ─── Claude backend ───────────────────────────────────────────────────────────
 
 def _build_with_claude(title: str, equations: str,
@@ -126,6 +159,185 @@ def _build_with_claude(title: str, equations: str,
         ai_confidence          = float(data.get("ai_confidence", 0.0)),
         notes                  = data.get("notes", ""),
     )
+
+
+# ─── Classical suggestion: Claude ────────────────────────────────────────────
+
+def _suggest_classical_with_claude(title: str, equations: str, api_key: str) -> dict:
+    client = _anthropic.Anthropic(api_key=api_key)
+    user_content = (
+        f"Research title: {title}\n\nEquations:\n{equations or '(none provided)'}"
+    )
+    with client.messages.stream(
+        model=_MODEL,
+        max_tokens=1024,
+        thinking={"type": "adaptive"},
+        system=_CLASSICAL_SYSTEM,
+        messages=[{"role": "user", "content": user_content}],
+    ) as stream:
+        message = stream.get_final_message()
+
+    raw = ""
+    for block in message.content:
+        if block.type == "text":
+            raw = block.text.strip()
+            break
+
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+
+    return json.loads(raw)
+
+
+# ─── Classical suggestion: heuristic ─────────────────────────────────────────
+
+def _suggest_classical_heuristic(title: str, equations: str) -> dict:
+    text = (title + " " + (equations or "")).lower()
+
+    if any(k in text for k in ["optimiz", "minimiz", "maximiz", "gradient", "loss"]):
+        return {
+            "reason": "Optimization over a smooth or well-structured landscape has no quantum advantage at this scale.",
+            "approach": "Gradient-based or metaheuristic optimization",
+            "libraries": ["scipy.optimize", "optuna", "pyomo"],
+            "example_sketch": (
+                "from scipy.optimize import minimize\n"
+                "import numpy as np\n\n"
+                "def objective(x):\n"
+                "    return x[0]**2 + x[1]**2  # replace with your function\n\n"
+                "result = minimize(objective, x0=[1.0, 1.0], method='L-BFGS-B')\n"
+                "print('Optimal x:', result.x)\n"
+                "print('Minimum value:', result.fun)"
+            ),
+            "documentation_links": [
+                "https://docs.scipy.org/doc/scipy/reference/optimize.html",
+                "https://optuna.readthedocs.io/",
+            ],
+        }
+
+    if any(k in text for k in ["matrix", "linear", "eigen", "svd", "decompos", "determinant"]):
+        return {
+            "reason": "Linear algebra operations on matrices of this size are highly efficient on classical hardware.",
+            "approach": "Numerical linear algebra with NumPy / SciPy",
+            "libraries": ["numpy", "scipy.linalg"],
+            "example_sketch": (
+                "import numpy as np\n"
+                "from scipy.linalg import eig, svd\n\n"
+                "A = np.array([[2, 1], [1, 3]])  # replace with your matrix\n\n"
+                "eigenvalues, eigenvectors = eig(A)\n"
+                "print('Eigenvalues:', eigenvalues)\n\n"
+                "U, s, Vh = svd(A)\n"
+                "print('Singular values:', s)"
+            ),
+            "documentation_links": [
+                "https://numpy.org/doc/stable/reference/routines.linalg.html",
+                "https://docs.scipy.org/doc/scipy/reference/linalg.html",
+            ],
+        }
+
+    if any(k in text for k in ["graph", "network", "path", "search", "sort", "tree", "route"]):
+        return {
+            "reason": "Graph traversal and path-finding algorithms are well-solved in classical computer science.",
+            "approach": "Classical graph algorithms with NetworkX",
+            "libraries": ["networkx", "heapq", "collections"],
+            "example_sketch": (
+                "import networkx as nx\n\n"
+                "G = nx.Graph()\n"
+                "G.add_weighted_edges_from([(0, 1, 1.5), (1, 2, 2.0), (0, 2, 4.0)])\n\n"
+                "path = nx.shortest_path(G, source=0, target=2, weight='weight')\n"
+                "print('Shortest path:', path)\n\n"
+                "print('All pairs shortest paths:')\n"
+                "for p in nx.all_pairs_shortest_path(G):\n"
+                "    print(p)"
+            ),
+            "documentation_links": [
+                "https://networkx.org/documentation/stable/reference/algorithms/",
+            ],
+        }
+
+    if any(k in text for k in ["simulate", "monte carlo", "stochastic", "random", "probab", "distribution"]):
+        return {
+            "reason": "Probabilistic simulation scales well classically and does not benefit from quantum superposition here.",
+            "approach": "Monte Carlo simulation with NumPy / SciPy",
+            "libraries": ["numpy", "scipy.stats", "simpy"],
+            "example_sketch": (
+                "import numpy as np\n"
+                "from scipy import stats\n\n"
+                "rng = np.random.default_rng(seed=42)\n"
+                "N = 1_000_000\n\n"
+                "# Example: estimate π via Monte Carlo\n"
+                "x, y = rng.uniform(-1, 1, N), rng.uniform(-1, 1, N)\n"
+                "pi_estimate = 4 * np.sum(x**2 + y**2 <= 1) / N\n"
+                "print('π ≈', pi_estimate)"
+            ),
+            "documentation_links": [
+                "https://numpy.org/doc/stable/reference/random/",
+                "https://docs.scipy.org/doc/scipy/reference/stats.html",
+            ],
+        }
+
+    if any(k in text for k in ["learn", "classify", "predict", "neural", "regression", "cluster"]):
+        return {
+            "reason": "Classical machine learning algorithms are mature and well-optimized for this class of problem.",
+            "approach": "Classical machine learning with scikit-learn or PyTorch",
+            "libraries": ["scikit-learn", "torch", "pandas"],
+            "example_sketch": (
+                "from sklearn.ensemble import RandomForestClassifier\n"
+                "from sklearn.model_selection import train_test_split\n"
+                "from sklearn.metrics import accuracy_score\n\n"
+                "X_train, X_test, y_train, y_test = train_test_split(\n"
+                "    X, y, test_size=0.2, random_state=42)\n\n"
+                "clf = RandomForestClassifier(n_estimators=100, random_state=42)\n"
+                "clf.fit(X_train, y_train)\n"
+                "print('Accuracy:', accuracy_score(y_test, clf.predict(X_test)))"
+            ),
+            "documentation_links": [
+                "https://scikit-learn.org/stable/user_guide.html",
+                "https://pytorch.org/tutorials/",
+            ],
+        }
+
+    if any(k in text for k in ["differential", "integral", "ode", "pde", "equation", "numerical"]):
+        return {
+            "reason": "Numerical solvers for differential equations are highly efficient on classical hardware.",
+            "approach": "Numerical integration / ODE solving with SciPy",
+            "libraries": ["scipy.integrate", "numpy", "matplotlib"],
+            "example_sketch": (
+                "from scipy.integrate import solve_ivp\n"
+                "import numpy as np\n\n"
+                "def system(t, y):\n"
+                "    return [-y[0] + y[1], -2 * y[1]]  # replace with your equations\n\n"
+                "sol = solve_ivp(system, t_span=[0, 10], y0=[1.0, 0.5],\n"
+                "                dense_output=True)\n"
+                "t = np.linspace(0, 10, 300)\n"
+                "print(sol.sol(t))"
+            ),
+            "documentation_links": [
+                "https://docs.scipy.org/doc/scipy/reference/integrate.html",
+            ],
+        }
+
+    # Generic fallback
+    return {
+        "reason": "The problem structure does not exhibit the superposition, entanglement, or interference properties that give quantum computers an advantage.",
+        "approach": "General-purpose classical computation with NumPy and SciPy",
+        "libraries": ["numpy", "scipy", "pandas"],
+        "example_sketch": (
+            "import numpy as np\n"
+            "import scipy\n\n"
+            "# Implement your equations using standard numerical methods.\n"
+            "# numpy arrays for vectorized math.\n"
+            "# scipy for integration, optimization, and signal processing.\n\n"
+            "# Example: evaluate an expression over a range\n"
+            "x = np.linspace(0, 10, 1000)\n"
+            "y = np.sin(x) * np.exp(-0.1 * x)  # replace with your equation\n"
+            "print('Result range:', y.min(), 'to', y.max())"
+        ),
+        "documentation_links": [
+            "https://numpy.org/doc/stable/",
+            "https://docs.scipy.org/doc/scipy/",
+        ],
+    }
 
 
 # ─── Heuristic fallback ───────────────────────────────────────────────────────
