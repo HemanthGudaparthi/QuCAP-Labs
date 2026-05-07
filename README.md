@@ -23,8 +23,9 @@ are never made public without explicit admin approval.
    - [quantum/photonic.py — Photonic backend (placeholder)](#quantumphonicpy--photonic-backend-placeholder)
    - [quantum/neutrino.py — Neutrino backend (placeholder)](#quantumneutrinopy--neutrino-backend-placeholder)
    - [storage/db1_gdrive.py — DB1 storage (Google Drive)](#storagedb1_gdrivepy--db1-storage-google-drive)
-6. [API Quick Reference](#api-quick-reference)
-7. [Workflow Overview](#workflow-overview)
+6. [.env Walkthrough](#env-walkthrough)
+7. [API Quick Reference](#api-quick-reference)
+8. [Workflow Overview](#workflow-overview)
 
 ---
 
@@ -356,6 +357,148 @@ To set up Google Drive credentials:
 3. Create a **Service Account** and download the JSON key.
 4. Share your target Drive folder with the service account email.
 5. Set `GDRIVE_CREDENTIALS_FILE` to the JSON path and `GDRIVE_FOLDER_ID` to the folder ID.
+
+---
+
+## .env Walkthrough
+
+Copy `.env.example` to `.env` and work through each section below.
+Variables marked **required** will cause the app to refuse to start if missing.
+Everything else is optional and enables a specific feature or backend.
+
+```bash
+cp .env.example .env
+```
+
+---
+
+### Flask core
+
+```env
+SECRET_KEY=CHANGE_ME_LONG_RANDOM_STRING
+JWT_SECRET_KEY=CHANGE_ME_ANOTHER_LONG_RANDOM_STRING
+FLASK_DEBUG=0
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `SECRET_KEY` | yes | Signs Flask sessions. Use a long random string — generate one with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `JWT_SECRET_KEY` | yes | Signs JWT tokens. Use a different value from `SECRET_KEY` |
+| `FLASK_DEBUG` | no | Set to `1` for auto-reload during development. **Never `1` in production.** |
+
+---
+
+### Bootstrap admin (first run only)
+
+```env
+BOOTSTRAP_ADMIN_ID=admin
+BOOTSTRAP_ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `BOOTSTRAP_ADMIN_ID` | first run | The username of the first admin account created on startup |
+| `BOOTSTRAP_ADMIN_PASSWORD` | first run | Must be strong. After the account is created you can remove both variables from `.env` |
+
+Once the admin exists, removing these lines from `.env` prevents accidental re-use.
+
+---
+
+### Database
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/quantumlabs
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | no | Standard SQLAlchemy connection string. If omitted, the app uses a local SQLite file (`quantumlabs_dev.db`) — fine for development, not for production |
+
+PostgreSQL example: `postgresql://quantumlabs:mypassword@localhost:5432/quantumlabs`
+
+SQLite is used automatically when this variable is absent — no configuration needed for local development.
+
+---
+
+### Claude AI — circuit builder
+
+```env
+ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `ANTHROPIC_API_KEY` | no | Enables Claude (`claude-opus-4-7`) for quantum circuit generation. If absent, the app falls back to the built-in heuristic circuit builder automatically |
+
+Get a key at [console.anthropic.com](https://console.anthropic.com). The key starts with `sk-ant-`.
+
+---
+
+### IBM Quantum — electron backend
+
+```env
+IBM_QUANTUM_TOKEN=YOUR_IBM_QUANTUM_API_TOKEN
+IBM_QUANTUM_BACKEND=ibm_brisbane
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `IBM_QUANTUM_TOKEN` | no | IBM Quantum API token. If absent, the electron backend falls back to Qiskit's local `AerSimulator` — experiments still run, just on a local simulator |
+| `IBM_QUANTUM_BACKEND` | no | Name of the IBM backend to target (default: `ibm_brisbane`). Check available backends in the IBM Quantum dashboard |
+
+Get a token at [quantum.ibm.com](https://quantum.ibm.com).
+
+---
+
+### Google Drive — DB1 storage
+
+```env
+GDRIVE_CREDENTIALS_FILE=credentials/gdrive_service_account.json
+GDRIVE_FOLDER_ID=YOUR_GOOGLE_DRIVE_FOLDER_ID
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `GDRIVE_CREDENTIALS_FILE` | no | Path to the Google service account JSON key file, relative to the project root |
+| `GDRIVE_FOLDER_ID` | no | ID of the Drive folder to use as DB1. Found in the folder's URL: `drive.google.com/drive/folders/<ID>` |
+
+If either variable is missing, research files are saved to `/tmp/db1_stub_<id>.json` locally instead. No data is lost in development; just make sure to configure Drive before running in production.
+
+Setup steps:
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com) and enable the **Drive API**.
+2. Create a **Service Account**, download its JSON key, and place it at the path above.
+3. Share your target Drive folder with the service account's email address (shown in the JSON file under `client_email`).
+
+---
+
+### Security tuning
+
+```env
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_MINUTES=15
+```
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `MAX_LOGIN_ATTEMPTS` | no | How many consecutive failed logins before an account is locked (default: 5) |
+| `LOCKOUT_MINUTES` | no | How long the lockout lasts (default: 15 minutes) |
+
+---
+
+### Minimal `.env` for local development
+
+This is the smallest `.env` that will start the app with no external services:
+
+```env
+SECRET_KEY=dev-secret-change-me-in-production-abc123
+JWT_SECRET_KEY=dev-jwt-secret-change-me-in-production-xyz789
+FLASK_DEBUG=1
+BOOTSTRAP_ADMIN_ID=admin
+BOOTSTRAP_ADMIN_PASSWORD=Admin1234!
+```
+
+Everything else falls back gracefully: SQLite for the database, heuristic
+circuit builder, AerSimulator for quantum runs, and `/tmp` stubs for DB1.
 
 ---
 
