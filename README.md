@@ -219,7 +219,7 @@ Not run directly. All functions are called through API routes in `app.py`.
 | Function | Workflow step |
 |----------|--------------|
 | `submit_research(user_id, title, equations)` | Step 2 — Create research entry, upload to DB1, award ILP tokens |
-| `check_novelty(research_id)` | Step 4 — Score novelty; issue `NoveltyToken` if novel |
+| `check_novelty(research_id)` | Step 4 — Score novelty; issue `NoveltyToken` if novel. If not novel, returns the most recent correct `prior_circuit_id` from the RD to build upon |
 | `select_hardware_and_check(research_id, hardware_type, user_id)` | Steps 5–6 — Create experiment, check hardware suitability |
 | `build_experiment_circuit(experiment_id, prior_circuit_id)` | Step 7 — Generate QASM via AI circuit builder |
 | `run_experiment(experiment_id, circuit_id, shots)` | Step 10 — Execute on backend, compute reliability score |
@@ -550,13 +550,14 @@ curl -s http://127.0.0.1:5000/api/auth/me \
 Login
   └─ Submit Research (title + equations)
        └─ Novelty Check
-            ├─ Not novel → stop
-            └─ Novel → Novelty Token issued
-                 └─ Select Hardware (electron | photonic | neutrino)
-                      └─ Suitability Check
-                           ├─ Not suitable → stop
-                           └─ Suitable
-                                └─ Build Circuit (Claude AI / heuristic)
+            ├─ Not novel → retrieve existing circuit from RD (prior_circuit_id returned)
+            │                  └─ Build Circuit (extend existing circuit) ──────────────┐
+            └─ Novel → Novelty Token issued                                             │
+                 └─ Select Hardware (electron | photonic | neutrino)                   │
+                      └─ Suitability Check                                             │
+                           ├─ Not suitable → stop                                      │
+                           └─ Suitable                                                 │
+                                └─ Build Circuit (Claude AI / heuristic) ◄─────────────┘
                                      └─ Run Experiment (shots)
                                           ├─ Reliability < 0.6 → Extend Circuit ──┐
                                           │                                        │ (loop)
@@ -565,6 +566,12 @@ Login
                                                     └─ Approve Publication (admin only)
                                                          └─ Results visible at /api/results/public
 ```
+
+When research is **not novel**, the novelty check response includes a
+`prior_circuit_id` pointing to the most recent theoretically-correct circuit
+in the database. Pass that ID as `prior_circuit_id` in the body of
+`POST /api/quantum/experiments/<id>/circuit` to build an extended circuit
+instead of generating one from scratch.
 
 Results are **private by default** and require explicit admin approval before
 they appear on the public endpoint.

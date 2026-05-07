@@ -71,15 +71,21 @@ def _award_ilp_tokens(equations: str | None) -> int:
 
 # ─── Step 4: Novelty check → Novelty Tokens ──────────────────────────────────
 
-def check_novelty(research_id: str) -> tuple[bool, float]:
+def check_novelty(research_id: str) -> tuple[bool, float, int | None]:
     """
     Determine novelty of the research against the Research Database (RD).
     Placeholder: real implementation queries an embedding similarity index.
-    Returns (is_novel, novelty_score 0–1).
+
+    Returns (is_novel, novelty_score 0–1, prior_circuit_id).
+
+    - Novel     → issues a NoveltyToken; prior_circuit_id is None.
+    - Not novel → looks up the most recent correct circuit in the DB to use
+                  as the starting point for the build-circuit step;
+                  prior_circuit_id is that circuit's ID (or None if none exist yet).
     """
     r = Research.query.get(research_id)
     if not r:
-        return False, 0.0
+        return False, 0.0, None
 
     # Placeholder novelty score: hash-based pseudo-score.
     # Replace with vector similarity search against RD.
@@ -90,11 +96,23 @@ def check_novelty(research_id: str) -> tuple[bool, float]:
     r.is_novel      = is_novel
     r.novelty_score = score
 
+    prior_circuit_id = None
     if is_novel:
         _issue_novelty_token(r)
+    else:
+        # Not novel: surface the most recent theoretically-correct circuit from
+        # the RD so the researcher can extend it instead of starting from scratch.
+        existing = (QuantumCircuit.query
+                    .filter_by(theoretically_correct=True)
+                    .order_by(QuantumCircuit.id.desc())
+                    .first())
+        if existing:
+            prior_circuit_id = existing.id
+            # Point this research entry at the existing RD entry.
+            r.rd_entry_id = f"rd:{existing.experiment_id}"
 
     db.session.commit()
-    return is_novel, score
+    return is_novel, score, prior_circuit_id
 
 
 def _issue_novelty_token(research: Research):

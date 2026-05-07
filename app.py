@@ -153,7 +153,16 @@ def create_app(config_class=Config):
     def api_check_novelty(research_id):
         """
         POST /api/research/<id>/novelty
-        Runs novelty check; if novel, issues Novelty Tokens and stores in RD.
+        Runs novelty check.
+
+        Novel     → issues Novelty Tokens, stores in RD.
+                    Response: {is_novel: true, novelty_score, next_step: "select_hardware"}
+
+        Not novel → retrieves the most recent correct circuit from the RD to
+                    build upon. Response includes prior_circuit_id so the caller
+                    can pass it straight to POST /api/quantum/experiments/<id>/circuit.
+                    Response: {is_novel: false, novelty_score, prior_circuit_id,
+                               next_step: "build_circuit"}
         """
         from models import Research
         r = Research.query.get(research_id)
@@ -162,10 +171,25 @@ def create_app(config_class=Config):
         if r.user_id != get_jwt_identity():
             return jsonify({"error": "Access denied"}), 403
 
-        is_novel, score = wf.check_novelty(research_id)
+        is_novel, score, prior_circuit_id = wf.check_novelty(research_id)
         audit(get_jwt_identity(), "NOVELTY_CHECKED", "research", research_id,
-              {"is_novel": is_novel, "score": score})
-        return jsonify({"is_novel": is_novel, "novelty_score": score}), 200
+              {"is_novel": is_novel, "score": score,
+               "prior_circuit_id": prior_circuit_id})
+
+        response = {"is_novel": is_novel, "novelty_score": score}
+        if is_novel:
+            response["next_step"] = "select_hardware"
+        else:
+            response["next_step"]        = "build_circuit"
+            response["prior_circuit_id"] = prior_circuit_id
+            response["message"] = (
+                "Research is not novel. Use prior_circuit_id as the starting "
+                "point when calling POST /api/quantum/experiments/<id>/circuit."
+                if prior_circuit_id else
+                "Research is not novel but no prior circuit exists yet. "
+                "Proceed with hardware selection and build a new circuit."
+            )
+        return jsonify(response), 200
 
     # =========================================================================
     # QUANTUM EXPERIMENTS  (Steps 5 → 11)
