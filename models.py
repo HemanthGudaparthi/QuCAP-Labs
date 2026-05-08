@@ -50,6 +50,8 @@ class Research(db.Model):
 
     id             = db.Column(db.String(50),  primary_key=True)
     user_id        = db.Column(db.String(50),  db.ForeignKey("users.id"), nullable=False)
+    # input_type: "research" (title + equations), "topic" (keyword), "query" (free-form)
+    input_type     = db.Column(db.String(20),  nullable=False, default="research")
     title          = db.Column(db.String(255), nullable=False)
     equations      = db.Column(db.Text)
     tokens_awarded = db.Column(db.Integer,     nullable=False, default=0)
@@ -66,7 +68,7 @@ class Research(db.Model):
 
     def to_dict(self):
         return {
-            "id": self.id, "title": self.title,
+            "id": self.id, "input_type": self.input_type, "title": self.title,
             "is_novel": self.is_novel, "novelty_score": self.novelty_score,
             "tokens_awarded": self.tokens_awarded, "created_at": self.created_at.isoformat(),
         }

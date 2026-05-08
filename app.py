@@ -120,19 +120,34 @@ def create_app(config_class=Config):
     def api_submit_research():
         """
         POST /api/research
-        Body: {"title": "...", "equations": "..."}
+        Body:
+          {
+            "input_type": "research" | "topic" | "query",   // default: "research"
+            "title":      "...",   // research title, topic keyword, or question
+            "equations":  "..."    // optional for topic/query inputs
+          }
+
+        input_type values:
+          "research" — formal research with title + equations (full workflow)
+          "topic"    — domain keyword, e.g. "cryptography" or "optimization"
+                       (generates a canonical circuit for that domain)
+          "query"    — free-form question, e.g. "How does a Bell state work?"
+                       (AI interprets and builds the most appropriate circuit)
+
         Creates research entry, stores in DB1, awards ILP tokens.
         """
-        body      = request.get_json(silent=True) or {}
-        user_id   = get_jwt_identity()
-        title     = body.get("title",     "").strip()
-        equations = body.get("equations", "").strip() or None
+        body       = request.get_json(silent=True) or {}
+        user_id    = get_jwt_identity()
+        title      = body.get("title",      "").strip()
+        equations  = body.get("equations",  "").strip() or None
+        input_type = body.get("input_type", "research").strip()
 
-        r, err = wf.submit_research(user_id, title, equations)
+        r, err = wf.submit_research(user_id, title, equations, input_type)
         if err:
             return jsonify({"error": err}), 400
 
-        audit(user_id, "RESEARCH_SUBMITTED", "research", r.id)
+        audit(user_id, "RESEARCH_SUBMITTED", "research", r.id,
+              {"input_type": input_type})
         return jsonify({"research": r.to_dict()}), 201
 
     @app.route("/api/research/<research_id>", methods=["GET"])
@@ -228,10 +243,22 @@ def create_app(config_class=Config):
         audit(user_id, "EXPERIMENT_CREATED", "experiment", exp.id,
               {"hardware": hardware_type, "suitable": is_suitable})
 
+        from quantum.limitations import describe_limitations
+        from quantum import get_backend
+        from models import Research as _Research
+        _r = _Research.query.get(research_id)
+        _backend = get_backend(hardware_type)
+        hw_limitations = describe_limitations(
+            hardware_type     = hardware_type,
+            backend_available = _backend.available,
+            input_type        = _r.input_type if _r else "research",
+        )
+
         return jsonify({
-            "experiment":   exp.to_dict(),
-            "is_suitable":  is_suitable,
-            "reason":       reason,
+            "experiment":  exp.to_dict(),
+            "is_suitable": is_suitable,
+            "reason":      reason,
+            "limitations": hw_limitations,
         }), 201
 
     @app.route("/api/quantum/experiments/<int:exp_id>/circuit", methods=["POST"])
@@ -253,6 +280,22 @@ def create_app(config_class=Config):
               {"version": qc.version, "theoretically_correct": qc.theoretically_correct,
                "is_quantum_application": qc.is_quantum_application})
 
+        from models import QuantumExperiment, Research
+        from quantum.limitations import describe_limitations
+        from quantum import get_backend as _get_backend
+        exp = QuantumExperiment.query.get(exp_id)
+        r   = Research.query.get(exp.research_id) if exp else None
+        _backend = _get_backend(exp.hardware_type) if exp else None
+
+        limitations = describe_limitations(
+            hardware_type          = exp.hardware_type if exp else "electron",
+            backend_available      = _backend.available if _backend else False,
+            input_type             = r.input_type if r else "research",
+            theoretically_correct  = qc.theoretically_correct,
+            is_quantum_application = qc.is_quantum_application,
+            ai_confidence          = qc.ai_confidence,
+        )
+
         response = {
             "circuit_id":             qc.id,
             "version":                qc.version,
@@ -260,13 +303,18 @@ def create_app(config_class=Config):
             "is_quantum_application": qc.is_quantum_application,
             "ai_confidence":          qc.ai_confidence,
             "qasm_preview":           qc.circuit_qasm[:300],
+            "limitations":            limitations,
         }
 
+        # Surface algorithm name / query interpretation when present.
+        meta = json.loads(qc.circuit_metadata or "{}")
+        if meta.get("algorithm_name"):
+            response["algorithm_name"] = meta["algorithm_name"]
+        if meta.get("interpretation"):
+            response["interpretation"] = meta["interpretation"]
+
         if not qc.is_quantum_application:
-            from models import QuantumExperiment, Research
             from quantum.ai_circuit import suggest_classical_approach
-            exp = QuantumExperiment.query.get(exp_id)
-            r   = Research.query.get(exp.research_id) if exp else None
             suggestion = suggest_classical_approach(
                 r.title     if r else "",
                 r.equations if r else "",

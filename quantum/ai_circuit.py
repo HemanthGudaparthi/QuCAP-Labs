@@ -40,9 +40,10 @@ Respond with ONLY a JSON object — no prose, no markdown fences:
 }
 """
 
-_SYSTEM_PROMPT = """\
+_SYSTEM_RESEARCH = """\
 You are a quantum computing expert. Given a research title and equations, \
-generate a valid OpenQASM 3.0 quantum circuit, then assess it.
+generate a valid OpenQASM 3.0 quantum circuit that encodes the mathematical \
+structure of the equations, then assess it.
 
 Respond with ONLY a JSON object — no prose, no markdown fences:
 {
@@ -50,7 +51,7 @@ Respond with ONLY a JSON object — no prose, no markdown fences:
   "theoretically_correct": true|false,
   "is_quantum_application": true|false,
   "ai_confidence": <float 0.0-1.0>,
-  "notes": "<brief explanation>",
+  "notes": "<brief explanation of how the circuit encodes the equations>",
   "n_qubits": <int>,
   "gates": [<gate name strings>]
 }
@@ -59,11 +60,67 @@ Rules:
 - Use OPENQASM 3.0; include "stdgates.inc";
 - Include qubit and bit declarations, gate operations, and a measurement.
 - theoretically_correct: true only if the circuit is well-formed and the \
-  gates are appropriate for the equations.
-- is_quantum_application: true if the circuit represents a meaningful \
-  standalone quantum application (not just a demo).
+  gates reflect the equations.
+- is_quantum_application: true if the circuit gives a genuine quantum \
+  advantage over a classical approach.
 - ai_confidence: your confidence in the generated circuit (0.0–1.0).
 """
+
+_SYSTEM_TOPIC = """\
+You are a quantum computing expert. Given a domain keyword (e.g. \
+"cryptography", "optimization", "chemistry"), generate a canonical \
+illustrative OpenQASM 3.0 circuit for the most well-known quantum \
+algorithm in that domain, then assess it.
+
+Respond with ONLY a JSON object — no prose, no markdown fences:
+{
+  "qasm": "<full OpenQASM 3.0 circuit string>",
+  "algorithm_name": "<e.g. Shor's Algorithm, QAOA, VQE, Grover's Search>",
+  "theoretically_correct": true|false,
+  "is_quantum_application": true|false,
+  "ai_confidence": <float 0.0-1.0>,
+  "notes": "<which algorithm this represents and why it suits the topic>",
+  "n_qubits": <int>,
+  "gates": [<gate name strings>]
+}
+
+Rules:
+- Use OPENQASM 3.0; include "stdgates.inc";
+- Include qubit and bit declarations, gate operations, and a measurement.
+- Pick the algorithm most strongly associated with the topic.
+- is_quantum_application: true if a quantum speedup exists for this domain.
+- ai_confidence: your confidence in the circuit's correctness (0.0–1.0).
+"""
+
+_SYSTEM_QUERY = """\
+You are a quantum computing expert. The user has asked a free-form question \
+or given an instruction about quantum circuits. Interpret their intent and \
+generate the most appropriate OpenQASM 3.0 circuit that answers or \
+demonstrates it.
+
+Respond with ONLY a JSON object — no prose, no markdown fences:
+{
+  "qasm": "<full OpenQASM 3.0 circuit string>",
+  "interpretation": "<one sentence: how you interpreted the query>",
+  "theoretically_correct": true|false,
+  "is_quantum_application": true|false,
+  "ai_confidence": <float 0.0-1.0>,
+  "notes": "<what the circuit does and any caveats>",
+  "n_qubits": <int>,
+  "gates": [<gate name strings>]
+}
+
+Rules:
+- Use OPENQASM 3.0; include "stdgates.inc";
+- Include qubit and bit declarations, gate operations, and a measurement.
+- If the query cannot be meaningfully expressed as a quantum circuit, set \
+  is_quantum_application to false and explain in notes.
+- ai_confidence: your confidence in the circuit matching the user's intent \
+  (0.0–1.0).
+"""
+
+# Legacy alias used internally — default to research prompt.
+_SYSTEM_PROMPT = _SYSTEM_RESEARCH
 
 
 @dataclass
@@ -74,20 +131,32 @@ class CircuitResult:
     is_quantum_application: bool = False
     ai_confidence:          float = 0.0
     notes:                  str = ""
+    # topic inputs: name of the canonical algorithm generated
+    algorithm_name:         str = ""
+    # query inputs: one-sentence description of how the query was interpreted
+    interpretation:         str = ""
 
 
 # ─── Public API ───────────────────────────────────────────────────────────────
 
-def build_circuit(title: str, equations: str, prior_qasm: str | None = None) -> CircuitResult:
+def build_circuit(title: str, equations: str,
+                  prior_qasm: str | None = None,
+                  input_type: str = "research") -> CircuitResult:
     """
-    Build a quantum circuit for the given research title and equations.
+    Build a quantum circuit.
+
+    input_type controls how the AI interprets the input:
+      "research" — title + equations encode a formal research problem
+      "topic"    — title is a domain keyword (e.g. "cryptography")
+      "query"    — title is a free-form question or instruction
+
     Uses Claude when ANTHROPIC_API_KEY is set; falls back to heuristics otherwise.
     `prior_qasm` triggers extension mode (build upon existing results).
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if api_key and _HAS_ANTHROPIC:
         try:
-            return _build_with_claude(title, equations, prior_qasm, api_key)
+            return _build_with_claude(title, equations, prior_qasm, api_key, input_type)
         except Exception as exc:
             print(f"[ai_circuit] Claude call failed ({exc}); falling back to heuristics.")
 
@@ -120,19 +189,36 @@ def suggest_classical_approach(title: str, equations: str) -> dict:
 
 # ─── Claude backend ───────────────────────────────────────────────────────────
 
+_INPUT_TYPE_SYSTEM = {
+    "research": _SYSTEM_RESEARCH,
+    "topic":    _SYSTEM_TOPIC,
+    "query":    _SYSTEM_QUERY,
+}
+
+_INPUT_TYPE_USER_PREFIX = {
+    "research": lambda t, eq: f"Research title: {t}\n\nEquations:\n{eq or '(none provided)'}",
+    "topic":    lambda t, _:  f"Topic / domain keyword: {t}",
+    "query":    lambda t, eq: f"Query: {t}" + (f"\n\nAdditional context:\n{eq}" if eq else ""),
+}
+
+
 def _build_with_claude(title: str, equations: str,
-                       prior_qasm: str | None, api_key: str) -> CircuitResult:
+                       prior_qasm: str | None, api_key: str,
+                       input_type: str = "research") -> CircuitResult:
     client = _anthropic.Anthropic(api_key=api_key)
 
-    user_content = f"Research title: {title}\n\nEquations:\n{equations or '(none provided)'}"
+    prefix_fn    = _INPUT_TYPE_USER_PREFIX.get(input_type, _INPUT_TYPE_USER_PREFIX["research"])
+    user_content = prefix_fn(title, equations)
     if prior_qasm:
         user_content += f"\n\nExtend this existing circuit (add layers before the final measurement):\n{prior_qasm}"
+
+    system_prompt = _INPUT_TYPE_SYSTEM.get(input_type, _SYSTEM_RESEARCH)
 
     with client.messages.stream(
         model=_MODEL,
         max_tokens=4096,
         thinking={"type": "adaptive"},
-        system=_SYSTEM_PROMPT,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_content}],
     ) as stream:
         message = stream.get_final_message()
@@ -158,6 +244,8 @@ def _build_with_claude(title: str, equations: str,
         is_quantum_application = bool(data.get("is_quantum_application", False)),
         ai_confidence          = float(data.get("ai_confidence", 0.0)),
         notes                  = data.get("notes", ""),
+        algorithm_name         = data.get("algorithm_name", ""),
+        interpretation         = data.get("interpretation", ""),
     )
 
 

@@ -27,25 +27,40 @@ def utcnow():
 
 # ─── Step 2: Research submission ─────────────────────────────────────────────
 
-def submit_research(user_id: str, title: str, equations: str | None) -> tuple[Research | None, str | None]:
-    """Create a research entry, persist to DB1, and award base ILP tokens."""
+_VALID_INPUT_TYPES = {"research", "topic", "query"}
+
+
+def submit_research(user_id: str, title: str, equations: str | None,
+                    input_type: str = "research") -> tuple[Research | None, str | None]:
+    """
+    Create a research entry, persist to DB1, and award base ILP tokens.
+
+    input_type:
+      "research" — formal research submission with title + equations
+      "topic"    — domain keyword (e.g. "cryptography"); equations optional
+      "query"    — free-form question or circuit request; equations optional
+    """
     if not title or not title.strip():
-        return None, "Title is required"
+        return None, "title is required"
+    if input_type not in _VALID_INPUT_TYPES:
+        return None, f"input_type must be one of: {', '.join(sorted(_VALID_INPUT_TYPES))}"
 
     research_id = str(uuid.uuid4())[:16]
     db1_payload = {
         "research_id": research_id,
         "user_id":     user_id,
+        "input_type":  input_type,
         "title":       title,
         "equations":   equations,
     }
     db1_file_id = _db1.upload_research(research_id, db1_payload)
 
-    base_tokens = _award_ilp_tokens(equations)
+    base_tokens = _award_ilp_tokens(equations, input_type)
 
     r = Research(
         id             = research_id,
         user_id        = user_id,
+        input_type     = input_type,
         title          = title,
         equations      = equations,
         tokens_awarded = base_tokens,
@@ -61,8 +76,17 @@ def submit_research(user_id: str, title: str, equations: str | None) -> tuple[Re
     return r, None
 
 
-def _award_ilp_tokens(equations: str | None) -> int:
-    """Heuristic: more complex equations earn more ILP tokens."""
+def _award_ilp_tokens(equations: str | None, input_type: str = "research") -> int:
+    """
+    ILP token awards by input type:
+      research — up to 100 tokens based on equation complexity
+      topic    — flat 15 tokens (exploratory)
+      query    — flat 5 tokens (single inquiry)
+    """
+    if input_type == "topic":
+        return 15
+    if input_type == "query":
+        return 5
     if not equations:
         return 10
     complexity = len(equations)
@@ -155,7 +179,8 @@ def select_hardware_and_check(research_id: str, hardware_type: str,
     backend = get_backend(hardware_type)
 
     # Build a preliminary circuit just to assess suitability.
-    circuit_result = build_circuit(r.title, r.equations or "")
+    circuit_result = build_circuit(r.title, r.equations or "",
+                                   input_type=r.input_type)
     is_suitable, reason = backend.check_suitability(
         circuit_result.qasm, {"title": r.title}
     )
@@ -196,13 +221,20 @@ def build_experiment_circuit(experiment_id: int,
             parent_id  = pc.id
             version    = pc.version + 1
 
-    result = build_circuit(r.title, r.equations or "", prior_qasm=prior_qasm)
+    result = build_circuit(r.title, r.equations or "", prior_qasm=prior_qasm,
+                           input_type=r.input_type)
+
+    metadata = dict(result.metadata)
+    if result.algorithm_name:
+        metadata["algorithm_name"] = result.algorithm_name
+    if result.interpretation:
+        metadata["interpretation"] = result.interpretation
 
     qc = QuantumCircuit(
         experiment_id          = experiment_id,
         version                = version,
         circuit_qasm           = result.qasm,
-        circuit_metadata       = json.dumps(result.metadata),
+        circuit_metadata       = json.dumps(metadata),
         theoretically_correct  = result.theoretically_correct,
         is_quantum_application = result.is_quantum_application,
         ai_confidence          = result.ai_confidence,

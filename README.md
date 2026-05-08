@@ -22,6 +22,7 @@ are never made public without explicit admin approval.
    - [quantum/electron.py — IBM Quantum backend](#quantumelectronpy--ibm-quantum-backend)
    - [quantum/photonic.py — Photonic backend (placeholder)](#quantumphonicpy--photonic-backend-placeholder)
    - [quantum/neutrino.py — Neutrino backend (placeholder)](#quantumneutrinopy--neutrino-backend-placeholder)
+   - [quantum/limitations.py — Circuit limitations descriptor](#quantumlimitationspy--circuit-limitations-descriptor)
    - [storage/db1_gdrive.py — DB1 storage (Google Drive)](#storagedb1_gdrivepy--db1-storage-google-drive)
 6. [.env Walkthrough](#env-walkthrough)
 7. [API Quick Reference](#api-quick-reference)
@@ -216,9 +217,33 @@ Implements every step of the workflow diagram.
 
 Not run directly. All functions are called through API routes in `app.py`.
 
+**Input types** — `POST /api/research` accepts three modes via `input_type`:
+
+| `input_type` | `title` field | `equations` | ILP tokens | Circuit prompt |
+|---|---|---|---|---|
+| `"research"` | Formal research title | Expected | Up to 100 (complexity-based) | Encodes equations into gates |
+| `"topic"` | Domain keyword, e.g. `"cryptography"` | Optional | 15 (flat) | Canonical algorithm for that domain (Shor, QAOA, VQE, Grover…) |
+| `"query"` | Free-form question or instruction, e.g. `"Build a 3-qubit GHZ state"` | Optional context | 5 (flat) | AI interprets intent and builds the best-fit circuit |
+
+Examples:
+
+```bash
+# Topic input — generates a Shor/BB84 circuit
+curl -X POST http://127.0.0.1:5000/api/research \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"input_type": "topic", "title": "cryptography"}'
+
+# Query input — generates the requested circuit directly
+curl -X POST http://127.0.0.1:5000/api/research \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"input_type": "query", "title": "Build a 3-qubit GHZ state and measure all qubits"}'
+```
+
 | Function | Workflow step |
 |----------|--------------|
-| `submit_research(user_id, title, equations)` | Step 2 — Create research entry, upload to DB1, award ILP tokens |
+| `submit_research(user_id, title, equations, input_type)` | Step 2 — Create research entry, upload to DB1, award ILP tokens |
 | `check_novelty(research_id)` | Step 4 — Score novelty; issue `NoveltyToken` if novel. If not novel, returns the most recent correct `prior_circuit_id` from the RD to build upon |
 | `select_hardware_and_check(research_id, hardware_type, user_id)` | Steps 5–6 — Create experiment, check hardware suitability |
 | `build_experiment_circuit(experiment_id, prior_circuit_id)` | Step 7 — Generate QASM via AI circuit builder |
@@ -383,6 +408,31 @@ To set up Google Drive credentials:
 
 ---
 
+### `quantum/limitations.py` — Circuit limitations descriptor
+
+Generates a plain-English list of what a user will **not** see or experience
+when they run a quantum circuit. Attached automatically to two API responses:
+
+- `POST /api/quantum/experiments` — hardware-level limitations at experiment creation
+- `POST /api/quantum/experiments/<id>/circuit` — full limitations at circuit build time
+
+Limitations are grouped by category:
+
+| Category | Example limitation |
+|---|---|
+| Hardware (no IBM token) | "Running on AerSimulator — results are noise-free and do not reflect real hardware" |
+| Hardware (photonic / neutrino) | "Placeholder backend — no real hardware connected" |
+| Universal QC | "No error correction applied", "Results are probabilistic samples" |
+| Novelty system | "Hash-based novelty score, not real semantic search" |
+| Input type: `topic` | "Illustrative circuit — not parameterised for your problem size" |
+| Input type: `query` | "AI-interpreted best-effort approximation — verify gate logic" |
+| Circuit quality | Low confidence warning, theoretical correctness failure notice |
+
+The `limitations` array appears in both responses so researchers understand
+the constraints before interpreting results. No configuration required.
+
+---
+
 ## .env Walkthrough
 
 Copy `.env.example` to `.env` and work through each section below.
@@ -536,7 +586,7 @@ require a `Bearer <token>` header.
 | POST | `/api/auth/logout` | any | Revoke current token |
 | GET | `/api/auth/me` | any | Current user info |
 | POST | `/api/auth/users` | admin | Create a user |
-| POST | `/api/research` | researcher | Submit research |
+| POST | `/api/research` | researcher | Submit research, topic, or free-form query |
 | GET | `/api/research/<id>` | owner / admin | Get research entry |
 | POST | `/api/research/<id>/novelty` | researcher | Run novelty check |
 | GET | `/api/quantum/hardware` | any | List backend availability |
