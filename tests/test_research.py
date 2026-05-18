@@ -1,6 +1,7 @@
 """Tests for research.py — submission, ILP tokens, novelty heuristic, hardware selection,
 run_experiment, and publication control."""
 import pytest
+import json
 from unittest.mock import patch
 from auth import hash_password
 from research import (
