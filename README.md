@@ -55,7 +55,7 @@ every stage of the research pipeline.
 ## Project Structure
 
 ```
-QuantumLabs/
+QuCAP-Labs/
 ├── app.py                  # Flask factory, all API routes
 ├── auth.py                 # Login, JWT, lockout, role decorators
 ├── config.py               # Loads .env into Flask config
@@ -94,7 +94,7 @@ Optional (required for specific modules):
 
 ```bash
 # 1. Clone and enter the project
-cd QuantumLabs
+cd QuCAP-Labs
 
 # 2. Create and activate a virtual environment
 python -m venv .venv
