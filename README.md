@@ -1,8 +1,30 @@
-# QuantumLabs
+# QuApp Labs — Quantum Applications Laboratory
 
-A secure Flask-based platform for managing quantum research experiments.
-Researchers submit equations, the AI builds quantum circuits, and results
-are never made public without explicit admin approval.
+**Quantum Circuit Generator from Research Ideas & Papers**
+
+QuApp Labs (Quantum Applications Laboratory) is a secure, research-grade platform
+that turns research submissions into executable quantum circuits. Describe your
+problem as a formal title with equations, a domain keyword (e.g. `"cryptography"`),
+or a free-form question (e.g. `"Build a 3-qubit GHZ state"`) — the system handles
+the rest.
+
+Under the hood, Claude AI (`claude-opus-4-7`) synthesises an OpenQASM 3.0 circuit
+from your input, checks novelty against arXiv and Semantic Scholar, selects the
+best hardware backend (electron via IBM Quantum, photonic, or neutrino), and
+executes the circuit with a configurable shot count. A built-in heuristic
+circuit builder ensures the platform runs fully offline when no API key is
+configured.
+
+Results are private by default. An admin must explicitly approve publication
+before anything appears on the public endpoint — ensuring quality control at
+every stage of the research pipeline.
+
+**At a glance:**
+- Three input modes: formal research, topic keyword, or free-form query
+- Novelty scoring with Innovation Level Point (ILP) token rewards for novel work
+- Multi-backend quantum execution: IBM Quantum / AerSimulator / photonic (planned) / neutrino (planned)
+- Admin-gated publication with full audit logging
+- Graceful fallbacks throughout — runs without Anthropic, IBM, or Google credentials
 
 ---
 

@@ -1,10 +1,12 @@
 """
-QuantumLabs — Flask application entry point.
+QuApp Labs (Quantum Applications Laboratory) — Flask application entry point.
 CONFIDENTIAL: Do not deploy or publish without explicit authorization.
 
 All routes require a valid JWT (Bearer token from POST /api/auth/login).
 Results are NEVER public until an admin calls POST /api/results/<id>/approve.
 """
+
+import json
 
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
@@ -186,12 +188,26 @@ def create_app(config_class=Config):
         if r.user_id != get_jwt_identity():
             return jsonify({"error": "Access denied"}), 403
 
-        is_novel, score, prior_circuit_id = wf.check_novelty(research_id)
+        is_novel, score, prior_circuit_id, assessment = wf.check_novelty(research_id)
+
+        # Hardware suitability pre-check (runs alongside novelty in this phase).
+        from models import Research as _Research
+        from quantum.hardware_selector import full_ranking
+        _r    = _Research.query.get(research_id)
+        hw_rec = full_ranking(
+            _r.title, _r.equations or "", _r.input_type
+        ) if _r else {}
+
         audit(get_jwt_identity(), "NOVELTY_CHECKED", "research", research_id,
               {"is_novel": is_novel, "score": score,
                "prior_circuit_id": prior_circuit_id})
 
-        response = {"is_novel": is_novel, "novelty_score": score}
+        response = {
+            "is_novel":               is_novel,
+            "novelty_score":          score,
+            "assessment":             assessment,
+            "hardware_recommendation": hw_rec,
+        }
         if is_novel:
             response["next_step"] = "select_hardware"
         else:
@@ -226,13 +242,20 @@ def create_app(config_class=Config):
     def api_create_experiment():
         """
         POST /api/quantum/experiments
-        Body: {"research_id": "...", "hardware_type": "electron|photonic|neutrino"}
-        Creates experiment and checks suitability.
+        Body: {
+          "research_id":   "...",
+          "hardware_type": "electron|photonic|neutrino"  // optional
+        }
+
+        If hardware_type is omitted the system auto-selects by trying
+        electron → photonic → neutrino in priority order based on the
+        research content. If none are suitable, is_suitable=false and
+        a classical_suggestion is included in the response.
         """
         body          = request.get_json(silent=True) or {}
         user_id       = get_jwt_identity()
-        research_id   = body.get("research_id",  "")
-        hardware_type = body.get("hardware_type", "")
+        research_id   = body.get("research_id", "")
+        hardware_type = body.get("hardware_type", "").strip() or None
 
         exp, is_suitable, reason = wf.select_hardware_and_check(
             research_id, hardware_type, user_id
@@ -240,26 +263,39 @@ def create_app(config_class=Config):
         if exp is None:
             return jsonify({"error": reason}), 400
 
+        selected_hw = exp.hardware_type
         audit(user_id, "EXPERIMENT_CREATED", "experiment", exp.id,
-              {"hardware": hardware_type, "suitable": is_suitable})
+              {"hardware": selected_hw, "suitable": is_suitable,
+               "auto_selected": hardware_type is None})
 
         from quantum.limitations import describe_limitations
-        from quantum import get_backend
+        from quantum import get_backend as _get_hw
         from models import Research as _Research
-        _r = _Research.query.get(research_id)
-        _backend = get_backend(hardware_type)
+        _r       = _Research.query.get(research_id)
+        _backend = _get_hw(selected_hw)
         hw_limitations = describe_limitations(
-            hardware_type     = hardware_type,
+            hardware_type     = selected_hw,
             backend_available = _backend.available,
             input_type        = _r.input_type if _r else "research",
         )
 
-        return jsonify({
-            "experiment":  exp.to_dict(),
-            "is_suitable": is_suitable,
-            "reason":      reason,
-            "limitations": hw_limitations,
-        }), 201
+        resp_body = {
+            "experiment":    exp.to_dict(),
+            "is_suitable":   is_suitable,
+            "reason":        reason,
+            "limitations":   hw_limitations,
+        }
+        if hardware_type is None:
+            resp_body["auto_selected_hardware"] = selected_hw
+
+        # If nothing was suitable (auto-select fell through), add classical hint.
+        if not is_suitable and _r:
+            from quantum.ai_circuit import suggest_classical_approach
+            resp_body["classical_suggestion"] = suggest_classical_approach(
+                _r.title, _r.equations or ""
+            )
+
+        return jsonify(resp_body), 201
 
     @app.route("/api/quantum/experiments/<int:exp_id>/circuit", methods=["POST"])
     @researcher_required

@@ -21,7 +21,8 @@ class User(db.Model):
     locked_until   = db.Column(db.DateTime)
 
     research     = db.relationship("Research",          back_populates="user", lazy="dynamic")
-    experiments  = db.relationship("QuantumExperiment", back_populates="user", lazy="dynamic")
+    experiments  = db.relationship("QuantumExperiment", back_populates="user",
+                                   foreign_keys="QuantumExperiment.user_id", lazy="dynamic")
 
     def is_admin(self):
         return self.role == "admin"

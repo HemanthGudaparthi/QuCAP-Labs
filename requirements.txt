@@ -10,6 +10,13 @@ sqlalchemy>=2.0.0
 # Claude AI (circuit generation — falls back to heuristics without ANTHROPIC_API_KEY)
 anthropic>=0.40.0
 
+# HTTP client (novelty internet search — arXiv, Semantic Scholar)
+requests>=2.31.0
+
+# Testing
+pytest>=8.0.0
+pytest-flask>=1.3.0
+
 # IBM Quantum (electron-based architecture)
 qiskit>=1.1.0
 qiskit-ibm-runtime>=0.22.0

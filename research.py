@@ -1,5 +1,5 @@
 """
-QuantumLabs research workflow — mirrors every decision node in the diagram.
+QuApp Labs — research workflow — mirrors every decision node in the diagram.
 
 Flow:
   login → submit_research → check_novelty → (select_hardware → check_suitability)
@@ -9,14 +9,30 @@ Flow:
 
 import hashlib
 import json
+import re
 import secrets
 import uuid
 from datetime import datetime, timezone
+
+try:
+    import requests as _requests
+    _HAS_REQUESTS = True
+except ImportError:
+    _HAS_REQUESTS = False
+
+try:
+    import anthropic as _anthropic
+    _HAS_ANTHROPIC = True
+except ImportError:
+    _HAS_ANTHROPIC = False
 
 from models import db, User, Research, NoveltyToken, QuantumExperiment, QuantumCircuit, ExperimentResult
 from storage.db1_gdrive import DB1Storage
 from quantum import get_backend
 from quantum.ai_circuit import build_circuit, extend_circuit as ai_extend
+from quantum.hardware_selector import select_hardware, full_ranking
+
+_MODEL = "claude-opus-4-7"
 
 _db1 = DB1Storage()
 
@@ -95,28 +111,25 @@ def _award_ilp_tokens(equations: str | None, input_type: str = "research") -> in
 
 # ─── Step 4: Novelty check → Novelty Tokens ──────────────────────────────────
 
-def check_novelty(research_id: str) -> tuple[bool, float, int | None]:
+def check_novelty(research_id: str) -> tuple[bool, float, int | None, str]:
     """
-    Determine novelty of the research against the Research Database (RD).
-    Placeholder: real implementation queries an embedding similarity index.
+    Search arXiv and Semantic Scholar for related work, then assess novelty.
+    Also runs a hardware suitability pre-check to recommend electron/photonic/neutrino.
 
-    Returns (is_novel, novelty_score 0–1, prior_circuit_id).
+    Returns (is_novel, novelty_score 0–1, prior_circuit_id, assessment).
 
-    - Novel     → issues a NoveltyToken; prior_circuit_id is None.
-    - Not novel → looks up the most recent correct circuit in the DB to use
-                  as the starting point for the build-circuit step;
-                  prior_circuit_id is that circuit's ID (or None if none exist yet).
+    Novel     → issues a NoveltyToken; prior_circuit_id is None.
+    Not novel → returns ID of the most recent correct circuit to extend from.
     """
     r = Research.query.get(research_id)
     if not r:
-        return False, 0.0, None
+        return False, 0.0, None, "Research not found."
 
-    # Placeholder novelty score: hash-based pseudo-score.
-    # Replace with vector similarity search against RD.
-    seed = hashlib.sha256((r.title + (r.equations or "")).encode()).hexdigest()
-    score = (int(seed[:8], 16) % 1000) / 1000.0  # deterministic but fake
+    arxiv_hits   = _search_arxiv(r.title, r.equations)
+    scholar_hits = _search_semantic_scholar(r.title)
 
-    is_novel = score >= 0.5
+    is_novel, score, assessment = _assess_novelty(r, arxiv_hits, scholar_hits)
+
     r.is_novel      = is_novel
     r.novelty_score = score
 
@@ -124,19 +137,167 @@ def check_novelty(research_id: str) -> tuple[bool, float, int | None]:
     if is_novel:
         _issue_novelty_token(r)
     else:
-        # Not novel: surface the most recent theoretically-correct circuit from
-        # the RD so the researcher can extend it instead of starting from scratch.
         existing = (QuantumCircuit.query
                     .filter_by(theoretically_correct=True)
                     .order_by(QuantumCircuit.id.desc())
                     .first())
         if existing:
             prior_circuit_id = existing.id
-            # Point this research entry at the existing RD entry.
             r.rd_entry_id = f"rd:{existing.experiment_id}"
 
     db.session.commit()
-    return is_novel, score, prior_circuit_id
+    return is_novel, score, prior_circuit_id, assessment
+
+
+# ── Novelty: internet search ──────────────────────────────────────────────────
+
+def _search_arxiv(title: str, equations: str | None) -> list[dict]:
+    """Query the arXiv API for papers related to the research title."""
+    if not _HAS_REQUESTS:
+        return []
+    query = re.sub(r"[^\w\s]", "", title).strip().replace(" ", "+")
+    url   = f"http://export.arxiv.org/api/query?search_query=ti:{query}&max_results=5"
+    try:
+        resp = _requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return []
+        titles    = re.findall(r"<entry>.*?<title>(.*?)</title>.*?<summary>(.*?)</summary>",
+                               resp.text, re.DOTALL)
+        return [{"title": t.strip(), "abstract": s.strip()[:300]}
+                for t, s in titles][:5]
+    except Exception as exc:
+        print(f"[novelty] arXiv search failed: {exc}")
+        return []
+
+
+def _search_semantic_scholar(title: str) -> list[dict]:
+    """Query Semantic Scholar for papers related to the research title."""
+    if not _HAS_REQUESTS:
+        return []
+    url    = "https://api.semanticscholar.org/graph/v1/paper/search"
+    params = {"query": title, "limit": 5,
+               "fields": "title,abstract,year,citationCount"}
+    try:
+        resp = _requests.get(url, params=params, timeout=10)
+        if resp.status_code != 200:
+            return []
+        return resp.json().get("data", [])
+    except Exception as exc:
+        print(f"[novelty] Semantic Scholar search failed: {exc}")
+        return []
+
+
+# ── Novelty: assessment ───────────────────────────────────────────────────────
+
+_NOVELTY_SYSTEM = """\
+You are a research librarian and quantum computing expert. Given a research
+submission and related papers found in online databases, assess novelty.
+
+Respond with ONLY a JSON object — no prose, no markdown fences:
+{
+  "novelty_score": <0.0–1.0>,
+  "is_novel": <true if score >= 0.5>,
+  "assessment": "<2-3 sentences explaining the verdict>",
+  "most_similar": "<title of most similar found paper, or null>"
+}
+
+Scoring:
+  0.0–0.2 Nearly identical work exists
+  0.2–0.4 Very similar, minor variations
+  0.4–0.6 Related work but meaningful differences
+  0.6–0.8 Novel angle or combination of ideas
+  0.8–1.0 Highly novel — little prior art found
+"""
+
+
+def _assess_novelty(research: Research, arxiv_hits: list[dict],
+                    scholar_hits: list[dict]) -> tuple[bool, float, str]:
+    """Return (is_novel, score, assessment)."""
+    api_key = (
+        __import__("os").environ.get("ANTHROPIC_API_KEY")
+        if _HAS_ANTHROPIC else None
+    )
+    if api_key:
+        try:
+            return _assess_with_claude(research, arxiv_hits, scholar_hits, api_key)
+        except Exception as exc:
+            print(f"[novelty] Claude assessment failed ({exc}); using heuristic.")
+
+    return _assess_heuristic(research, arxiv_hits, scholar_hits)
+
+
+def _assess_with_claude(research: Research, arxiv_hits: list, scholar_hits: list,
+                        api_key: str) -> tuple[bool, float, str]:
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    papers = ""
+    if arxiv_hits:
+        papers += "arXiv:\n" + "\n".join(
+            f"- {p['title']}: {p['abstract'][:200]}" for p in arxiv_hits)
+    if scholar_hits:
+        papers += "\n\nSemantic Scholar:\n" + "\n".join(
+            f"- {p.get('title','')}: {(p.get('abstract') or '')[:200]}"
+            for p in scholar_hits)
+    if not papers:
+        papers = "No related papers found in online databases."
+
+    user_content = (
+        f"Title: {research.title}\n"
+        f"Equations: {research.equations or '(none)'}\n\n"
+        f"Related papers:\n{papers}"
+    )
+    with client.messages.stream(
+        model=_MODEL,
+        max_tokens=512,
+        system=_NOVELTY_SYSTEM,
+        messages=[{"role": "user", "content": user_content}],
+    ) as stream:
+        message = stream.get_final_message()
+
+    raw = ""
+    for block in message.content:
+        if block.type == "text":
+            raw = block.text.strip()
+            break
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+
+    data       = json.loads(raw)
+    score      = float(data.get("novelty_score", 0.5))
+    is_novel   = bool(data.get("is_novel", score >= 0.5))
+    assessment = data.get("assessment", "")
+    return is_novel, score, assessment
+
+
+def _assess_heuristic(research: Research, arxiv_hits: list,
+                      scholar_hits: list) -> tuple[bool, float, str]:
+    """Score based on number of similar papers found; hash-based if no results."""
+    total = len(arxiv_hits) + len(scholar_hits)
+
+    if total == 0 and not _HAS_REQUESTS:
+        # requests module unavailable → deterministic hash-based fallback
+        seed  = hashlib.sha256((research.title + (research.equations or "")).encode()).hexdigest()
+        score = (int(seed[:8], 16) % 1000) / 1000.0
+        assessment = (
+            "Online database search unavailable. Novelty assessed using a "
+            "hash-based heuristic — treat this result as approximate."
+        )
+    elif total == 0:
+        score      = 0.85
+        assessment = "No related papers found in arXiv or Semantic Scholar — research appears highly novel."
+    elif total <= 2:
+        score      = 0.65
+        assessment = f"Found {total} related paper(s). Research has meaningful differences from existing work."
+    elif total <= 4:
+        score      = 0.40
+        assessment = f"Found {total} related papers. Some similarity to existing work detected."
+    else:
+        score      = 0.25
+        assessment = f"Found {total} related papers. Strong similarity to existing literature."
+
+    is_novel = score >= 0.5
+    return is_novel, round(score, 3), assessment
 
 
 def _issue_novelty_token(research: Research):
@@ -164,31 +325,50 @@ def _issue_novelty_token(research: Research):
 
 # ─── Step 5/6: Hardware selection & suitability ───────────────────────────────
 
-def select_hardware_and_check(research_id: str, hardware_type: str,
+def select_hardware_and_check(research_id: str, hardware_type: str | None,
                               user_id: str) -> tuple[QuantumExperiment | None, bool, str]:
     """
-    Create an experiment record and check hardware suitability.
+    Select quantum hardware and check content-based suitability.
     Returns (experiment, is_suitable, reason).
+
+    hardware_type=None  → auto-select: electron → photonic → neutrino →
+                          classical suggestion if none qualify.
+    hardware_type=<str> → manual override; suitability still assessed by
+                          content analysis, not just circuit parameters.
     """
     r = Research.query.get(research_id)
     if not r:
         return None, False, "Research not found"
-    if hardware_type not in ("electron", "photonic", "neutrino"):
-        return None, False, "Invalid hardware type"
 
-    backend = get_backend(hardware_type)
-
-    # Build a preliminary circuit just to assess suitability.
-    circuit_result = build_circuit(r.title, r.equations or "",
-                                   input_type=r.input_type)
-    is_suitable, reason = backend.check_suitability(
-        circuit_result.qasm, {"title": r.title}
-    )
+    if hardware_type:
+        if hardware_type not in ("electron", "photonic", "neutrino"):
+            return None, False, "Invalid hardware type. Use electron, photonic, or neutrino."
+        selected_type = hardware_type
+        # Content-based suitability for the manually chosen backend.
+        ranking  = __import__("quantum.hardware_selector", fromlist=["rank_hardware"]).rank_hardware(
+            r.title, r.equations or "", r.input_type
+        )
+        score_map  = {item["type"]: item for item in ranking}
+        item       = score_map.get(selected_type, {"score": 0.1, "reason": "Not assessed."})
+        is_suitable = item["score"] >= 0.35
+        reason      = item["reason"]
+    else:
+        # Auto-selection: tries electron → photonic → neutrino in priority order.
+        selected_type, reason = select_hardware(
+            r.title, r.equations or "", r.input_type
+        )
+        if selected_type is None:
+            # Nothing suitable — create a logged experiment anyway so the
+            # classical suggestion flows through to the response.
+            selected_type = "electron"
+            is_suitable   = False
+        else:
+            is_suitable = True
 
     exp = QuantumExperiment(
         research_id   = research_id,
         user_id       = user_id,
-        hardware_type = hardware_type,
+        hardware_type = selected_type,
         is_suitable   = is_suitable,
     )
     db.session.add(exp)
