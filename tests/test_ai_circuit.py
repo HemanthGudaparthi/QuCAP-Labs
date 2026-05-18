@@ -1,5 +1,6 @@
 """Tests for quantum/ai_circuit.py — heuristic circuit building and classical suggestions."""
 import pytest
+import json
 from quantum.ai_circuit import (
     build_circuit, CircuitResult,
     _analyze_equations, _generate_qasm, _extend_qasm,
