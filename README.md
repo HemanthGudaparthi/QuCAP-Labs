@@ -1,8 +1,8 @@
-# QuApp Labs — Quantum Applications Laboratory
+# QuCAP Labs — Quantum Computing Applications or Quantum Capabilities Laboratory
 
 **Quantum Circuit Generator from Research Ideas & Papers**
 
-QuApp Labs (Quantum Applications Laboratory) is a secure, research-grade platform
+QuCAP Labs (Quantum Computing Applications or Quantum Capabilities Laboratory) is a secure, research-grade platform
 that turns research submissions into executable quantum circuits. Describe your
 problem as a formal title with equations, a domain keyword (e.g. `"cryptography"`),
 or a free-form question (e.g. `"Build a 3-qubit GHZ state"`) — the system handles
