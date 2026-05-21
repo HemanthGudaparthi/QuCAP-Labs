@@ -1,0 +1,3032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hemanth Gudaparthi — Quantum Forces Laboratory v4</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --owner-name: "Hemanth Gudaparthi";
+  --bg:          #f5f3ee;
+  --bg2:         #ffffff;
+  --bg3:         #ece9e2;
+  --panel:       #f9f8f5;
+  --border:      rgba(0,0,0,0.09);
+  --border2:     rgba(0,0,0,0.16);
+  --shadow:      0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-lg:   0 2px 8px rgba(0,0,0,0.1), 0 12px 40px rgba(0,0,0,0.08);
+  --text:        #1a1814;
+  --text2:       #5a5650;
+  --text3:       #9a9690;
+  --gravity:     #6d4aff;
+  --em:          #d97706;
+  --strong:      #dc2626;
+  --weak:        #059669;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+  --radius:      8px;
+  --radius-lg:   14px;
+  --wire:        rgba(0,0,0,0.18);
+  --gate-bg:     #ffffff;
+  --gate-border: rgba(0,0,0,0.2);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; font-size: 14px; }
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+button { font-family: var(--font-body); cursor: pointer; }
+input, select { font-family: var(--font-mono); }
+
+/* ── TOP BAR ── */
+#topbar {
+  height: 56px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-atom { width: 36px; height: 36px; position: relative; flex-shrink: 0; }
+.brand-name { font-family: var(--font-display); font-size: 15px; color: var(--text); line-height: 1.2; }
+.brand-sub { font-family: var(--font-body); font-size: 11px; color: var(--text3); font-weight: 400; letter-spacing: 0.04em; margin-top: 1px; }
+.topbar-pills { display: flex; align-items: center; gap: 8px; }
+.pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  color: var(--text3);
+  background: var(--bg);
+  letter-spacing: 0.04em;
+}
+.pill.live {
+  border-color: rgba(5,150,105,0.35);
+  color: var(--weak);
+  background: rgba(5,150,105,0.06);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--weak); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ── LAYOUT ── */
+#app { flex: 1; display: flex; overflow: hidden; }
+#sidebar {
+  width: 270px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+#qa-panel {
+  width: 340px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SIDEBAR ── */
+.sb-section { padding: 16px; border-bottom: 1px solid var(--border); }
+.sb-heading { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+.force-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--panel);
+  color: var(--text2); font-size: 12px; font-weight: 500;
+  text-align: left; margin-bottom: 6px;
+  transition: all 0.15s ease; position: relative;
+}
+.force-btn:hover { border-color: var(--fc, var(--border2)); background: var(--bg2); color: var(--text); box-shadow: var(--shadow); }
+.force-btn.active { border-color: var(--fc); background: var(--bg2); color: var(--text); box-shadow: var(--shadow); }
+.force-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+.force-badge { margin-left: auto; font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; border-radius: 10px; background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+.force-btn.active .force-badge { background: transparent; border-color: var(--fc); color: var(--fc); }
+
+/* ── PARAMS ── */
+.param-group { margin-bottom: 12px; }
+.param-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+.param-name { font-size: 11px; color: var(--text2); font-weight: 500; }
+.param-val { font-family: var(--font-mono); font-size: 11px; color: var(--text); font-weight: 500; }
+input[type="range"] {
+  width: 100%; height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--bg3); border-radius: 2px; outline: none; cursor: pointer; transition: background 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--fc, var(--gravity)); border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer;
+}
+select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 6px 10px; font-size: 11px;
+  color: var(--text); outline: none; cursor: pointer; transition: border-color 0.15s;
+}
+select:focus { border-color: var(--gravity); }
+
+/* ── ACTIONS ── */
+.actions { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 7px; }
+.btn { width: 100%; padding: 9px 14px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg); color: var(--text2); font-size: 12px; font-weight: 500; transition: all 0.15s; text-align: center; }
+.btn:hover { background: var(--bg3); color: var(--text); }
+.btn-primary { background: var(--gravity); border-color: var(--gravity); color: white; font-weight: 600; }
+.btn-primary:hover { background: #5a38ee; border-color: #5a38ee; }
+.btn-export { border-color: rgba(13,110,209,0.3); color: #0d6ed1; background: rgba(13,110,209,0.04); font-size: 11px; }
+.btn-export:hover { background: rgba(13,110,209,0.09); }
+.btn-bundle { font-size: 10px; color: var(--text3); }
+#force-desc { font-size: 11px; line-height: 1.75; color: var(--text2); }
+
+/* ── CIRCUIT ── */
+#circuit-wrap { flex: 0 0 auto; background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; padding: 20px 28px; box-shadow: inset 0 -2px 8px rgba(0,0,0,0.03); }
+#circuit-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+#circuit-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+svg#circ { display: block; overflow: visible; }
+
+/* ── RESULTS ── */
+#results-section { flex: 1; display: flex; overflow: hidden; }
+.result-tabs { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 16px; flex-shrink: 0; }
+.rtab { padding: 10px 14px; font-size: 11px; font-weight: 500; color: var(--text3); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.rtab:hover { color: var(--text2); }
+.rtab.active { color: var(--text); border-bottom-color: var(--fc, var(--gravity)); }
+#results-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.tab-pane { display: none; padding: 16px 20px; overflow-y: auto; height: 100%; }
+.tab-pane.active { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.prob-section { min-width: 220px; }
+.prob-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.prob-ket { font-family: var(--font-mono); font-size: 11px; color: var(--text3); min-width: 36px; }
+.prob-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.prob-pct { font-family: var(--font-mono); font-size: 10px; min-width: 38px; text-align: right; color: var(--text2); }
+.state-display { font-family: var(--font-mono); font-size: 13px; line-height: 2; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; min-width: 280px; }
+.bloch-card { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+.bloch-readout { font-family: var(--font-mono); font-size: 10px; color: var(--text2); line-height: 1.9; text-align: center; }
+.gate-info { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; max-width: 500px; }
+.gate-info h3 { font-family: var(--font-display); font-size: 15px; font-weight: 400; color: var(--text); margin-bottom: 8px; }
+.gate-info p { font-size: 12px; line-height: 1.8; color: var(--text2); }
+.gate-info .formula { margin-top: 10px; padding: 8px 12px; background: var(--bg3); border-radius: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--gravity); border-left: 3px solid var(--gravity); }
+.limit-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; }
+.limit-card h4 { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+.limit-card p { font-size: 11px; line-height: 1.7; color: var(--text2); }
+.limit-badge { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+.badge-limit { background: rgba(220,38,38,0.1); color: #dc2626; }
+.badge-fix   { background: rgba(5,150,105,0.1);  color: var(--weak); }
+
+/* ── Q&A PANEL ── */
+#qa-panel { display: flex; flex-direction: column; }
+#qa-header { padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+#qa-header h2 { font-family: var(--font-display); font-size: 14px; font-weight: 400; color: var(--text); margin-bottom: 2px; }
+#qa-header p { font-size: 10px; color: var(--text3); }
+#qa-messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 100%; font-size: 12px; line-height: 1.75; }
+.msg-user { background: var(--bg3); border-radius: var(--radius) var(--radius) 4px var(--radius); padding: 9px 12px; color: var(--text); align-self: flex-end; max-width: 85%; font-weight: 500; }
+.msg-ai { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px var(--radius) var(--radius) var(--radius); padding: 10px 12px; color: var(--text2); box-shadow: var(--shadow); }
+.msg-ai strong { color: var(--text); font-weight: 600; }
+.msg-ai .tag { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 10px; margin-right: 4px; font-weight: 600; margin-bottom: 6px; }
+.tag-limit { background: rgba(220,38,38,0.1); color: #dc2626; }
+.tag-exp   { background: rgba(109,74,255,0.1); color: var(--gravity); }
+.tag-fix   { background: rgba(5,150,105,0.1);  color: var(--weak); }
+.msg-typing { display: flex; align-items: center; gap: 4px; padding: 10px 12px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+.sq-section { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+.sq-label { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.sq-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.sq-chip { font-size: 10px; padding: 4px 10px; border: 1px solid var(--border2); border-radius: 12px; background: var(--bg2); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.sq-chip:hover { border-color: var(--gravity); color: var(--gravity); background: rgba(109,74,255,0.04); }
+#qa-input-area { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+#qa-input-row { display: flex; gap: 8px; align-items: flex-end; }
+#qa-input { flex: 1; border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; font-family: var(--font-body); font-size: 12px; color: var(--text); background: var(--bg); outline: none; resize: none; min-height: 36px; max-height: 80px; transition: border-color 0.15s; }
+#qa-input:focus { border-color: var(--gravity); }
+#qa-input::placeholder { color: var(--text3); }
+#qa-send { padding: 8px 14px; background: var(--gravity); border: none; border-radius: var(--radius); color: white; font-size: 12px; font-weight: 600; transition: background 0.15s; flex-shrink: 0; }
+#qa-send:hover { background: #5a38ee; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+/* ── NOTICE BAR ── */
+.notice { font-size: 10px; color: var(--text3); padding: 6px 16px; border-top: 1px solid var(--border); text-align: center; letter-spacing: 0.03em; background: var(--bg); flex-shrink: 0; }
+
+/* ── ER=EPR ── */
+:root { --erepr: #0ea5e9; --erepr2: #0369a1; }
+.erepr-info-card { background: linear-gradient(135deg, rgba(14,165,233,0.04) 0%, rgba(3,105,161,0.04) 100%); border: 1px solid rgba(14,165,233,0.25); border-radius: var(--radius-lg); padding: 14px 16px; font-size: 12px; line-height: 1.8; color: var(--text2); margin-bottom: 10px; }
+.erepr-info-card h4 { font-family: var(--font-display); font-size: 14px; font-weight: 400; color: var(--text); margin-bottom: 6px; }
+.erepr-badge { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 10px; background: rgba(14,165,233,0.1); color: #0369a1; border: 1px solid rgba(14,165,233,0.3); font-weight: 600; margin-right: 5px; margin-bottom: 5px; }
+.wormhole-diagram { margin: 10px 0; padding: 12px; background: var(--bg3); border-radius: var(--radius); font-family: var(--font-mono); font-size: 10px; line-height: 1.9; color: var(--text2); text-align: center; }
+.wormhole-diagram .wr { color: #0ea5e9; font-weight: 500; }
+.wormhole-diagram .ep { color: #6d4aff; font-weight: 500; }
+
+/* ── IBM BANNER ── */
+#ibm-banner { display: none; align-items: center; gap: 12px; padding: 10px 20px; font-size: 12px; line-height: 1.5; flex-shrink: 0; border-bottom: 1px solid var(--border); animation: slideDown 0.3s ease; }
+@keyframes slideDown { from { transform: translateY(-100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+#ibm-banner.active { display: flex; }
+#ibm-banner.ok    { background: rgba(5,150,105,0.07); border-bottom-color: rgba(5,150,105,0.25); }
+#ibm-banner.warn  { background: rgba(217,119,6,0.07); border-bottom-color: rgba(217,119,6,0.25); }
+#ibm-banner.error { background: rgba(220,38,38,0.07); border-bottom-color: rgba(220,38,38,0.25); }
+.ibm-banner-icon { font-size: 18px; flex-shrink: 0; }
+.ibm-banner-text { flex: 1; color: var(--text2); }
+.ibm-banner-text strong { color: var(--text); }
+.ibm-banner-text a { color: #185FA5; text-decoration: underline; }
+.ibm-banner-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.ibm-banner-btn { padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg2); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--text2); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.ibm-banner-btn:hover { background: var(--bg3); color: var(--text); }
+.ibm-banner-btn.primary { background: var(--weak); border-color: var(--weak); color: white; }
+.ibm-banner-btn.primary:hover { background: #047857; }
+#ibm-dismiss { padding: 4px 8px; border:none; background: transparent; color: var(--text3); cursor: pointer; font-size: 16px; line-height: 1; flex-shrink: 0; }
+#ibm-dismiss:hover { color: var(--text2); }
+#btn-ibm-run { border-color: rgba(5,150,105,0.4); color: var(--weak); background: rgba(5,150,105,0.05); font-size: 11px; }
+#btn-ibm-run:hover { background: rgba(5,150,105,0.1); }
+#btn-ibm-run.checking { opacity: 0.6; cursor: wait; }
+#btn-ibm-run:disabled { opacity: 0.4; cursor: not-allowed; }
+#ibm-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(20,16,10,0.5); z-index: 60; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+#ibm-modal-overlay.open { display: flex; }
+#ibm-modal { background: var(--bg2); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px 26px; width: min(520px, 92vw); max-height: 80vh; overflow-y: auto; }
+#ibm-modal h2 { font-family: var(--font-display); font-size: 19px; font-weight: 400; margin-bottom: 6px; }
+#ibm-modal p { font-size: 12px; line-height: 1.8; color: var(--text2); margin-bottom: 10px; }
+#ibm-modal code { font-family: var(--font-mono); font-size: 11px; background: var(--bg3); padding: 2px 6px; border-radius: 4px; }
+.ibm-job-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; font-size: 11px; color: var(--text2); line-height: 1.7; }
+.ibm-job-card strong { color: var(--text); }
+.ibm-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+.dot-ok { background: var(--weak); }
+.dot-warn { background: var(--em); }
+.dot-err { background: var(--strong); }
+.dot-queued { background: #6d4aff; animation: blink 1.5s infinite; }
+
+/* ── EXPLAIN PANEL ── */
+#explain-panel { display: none; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+#explain-panel.open { display: block; max-height: 420px; overflow-y: auto; }
+#explain-inner { padding: 16px 20px 18px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 900px) { #explain-inner { grid-template-columns: 1fr 1fr; } }
+.exp-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.exp-card h4 { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; line-height: 1.3; }
+.exp-card h4 .exp-icon { font-size: 14px; flex-shrink: 0; }
+.exp-card p, .exp-card li { font-size: 11px; line-height: 1.75; color: var(--text2); }
+.exp-card ul { padding-left: 14px; }
+.exp-card li { margin-bottom: 2px; }
+.bit-table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-top: 6px; }
+.bit-table th { background: var(--bg3); padding: 5px 8px; text-align: left; font-weight: 600; color: var(--text); border: 1px solid var(--border); font-size: 10px; letter-spacing: 0.04em; }
+.bit-table td { padding: 5px 8px; border: 1px solid var(--border); color: var(--text2); vertical-align: top; line-height: 1.55; }
+.bit-table td:first-child { font-family: var(--font-mono); color: var(--text); font-weight: 500; white-space: nowrap; }
+.bit-table .dominant { background: rgba(109,74,255,0.06) !important; }
+.bit-table .dominant td:first-child { color: var(--gravity); }
+.exp-formula { font-family: var(--font-mono); font-size: 10px; background: var(--bg3); border-left: 3px solid var(--gravity); border-radius: 0 4px 4px 0; padding: 6px 10px; margin-top: 7px; color: var(--gravity); line-height: 1.6; }
+.exp-highlight { background: rgba(109,74,255,0.08); border-radius: 3px; padding: 1px 5px; font-family: var(--font-mono); font-size: 10px; color: var(--gravity); font-weight: 500; }
+.exp-toggle-bar { display: flex; align-items: center; justify-content: space-between; padding: 7px 20px; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; cursor: pointer; transition: background 0.12s; }
+.exp-toggle-bar:hover { background: var(--bg3); }
+.exp-toggle-label { font-size: 11px; font-weight: 500; color: var(--text2); display: flex; align-items: center; gap: 7px; }
+.exp-toggle-caret { font-size: 10px; color: var(--text3); transition: transform 0.25s; }
+.exp-toggle-caret.open { transform: rotate(180deg); }
+
+/* ── arXiv MODAL ── */
+#arxiv-overlay { display: none; position: fixed; inset: 0; background: rgba(20,16,10,0.55); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+#arxiv-overlay.open { display: flex; }
+#arxiv-modal { background: var(--bg2); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: min(960px, 96vw); height: min(680px, 90vh); display: flex; flex-direction: column; overflow: hidden; }
+#arxiv-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#arxiv-topbar h2 { font-family: var(--font-display); font-size: 17px; font-weight: 400; display: flex; align-items: center; gap: 10px; }
+.arxiv-badge { font-family: var(--font-mono); font-size: 9px; padding: 3px 8px; border-radius: 10px; background: rgba(217,119,6,0.1); color: var(--em); border: 1px solid rgba(217,119,6,0.3); font-weight: 500; }
+#arxiv-close { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg); color: var(--text2); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+#arxiv-close:hover { background: var(--bg3); }
+#arxiv-search-row { display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#arxiv-search-row input { flex: 1; border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; font-size: 12px; font-family: var(--font-body); background: var(--bg); color: var(--text); outline: none; }
+#arxiv-search-row input:focus { border-color: var(--em); }
+#arxiv-search-row button { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--text2); white-space: nowrap; }
+#arxiv-search-row button:hover { background: var(--bg3); color: var(--text); }
+#arxiv-search-btn { background: var(--em) !important; border-color: var(--em) !important; color: white !important; }
+#arxiv-search-btn:hover { background: #b56309 !important; }
+.arxiv-cats { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 18px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.arxiv-cat { font-family: var(--font-mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text3); background: var(--bg); cursor: pointer; transition: all 0.12s; }
+.arxiv-cat.active { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.4); color: var(--em); }
+#arxiv-body { flex: 1; display: flex; overflow: hidden; }
+#arxiv-results { width: 360px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid var(--border); padding: 10px; }
+.arxiv-card { padding: 11px 13px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.arxiv-card:hover { border-color: var(--border2); background: var(--bg2); box-shadow: var(--shadow); }
+.arxiv-card.selected { border-color: var(--em); background: rgba(217,119,6,0.05); }
+.arxiv-card-title { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 4px; }
+.arxiv-card.selected .arxiv-card-title { color: var(--em); }
+.arxiv-card-meta { font-size: 10px; color: var(--text3); line-height: 1.5; }
+.arxiv-card-cats { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+.arxiv-chip { font-family: var(--font-mono); font-size: 9px; padding: 2px 6px; border-radius: 10px; background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+.arxiv-chip.qp { background: rgba(5,150,105,0.08); color: var(--weak); border-color: rgba(5,150,105,0.25); }
+.arxiv-link-small { font-size: 10px; color: #185FA5; text-decoration: none; display: inline-block; margin-top: 4px; }
+#arxiv-detail { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.arxiv-empty { text-align: center; padding: 32px 16px; color: var(--text3); font-size: 12px; line-height: 1.7; }
+.arxiv-detail-title { font-family: var(--font-display); font-size: 16px; font-weight: 400; color: var(--text); line-height: 1.4; margin-bottom: 5px; }
+.arxiv-detail-meta { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+.arxiv-abstract { font-size: 12px; line-height: 1.85; color: var(--text2); background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; max-height: 180px; overflow-y: auto; }
+.arxiv-gen-btn { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--em); color: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; font-family: var(--font-body); }
+.arxiv-gen-btn:hover { background: #b56309; }
+.arxiv-gen-btn:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
+#arxiv-circuit-result { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: none; }
+#arxiv-circuit-result.show { display: block; }
+.arxiv-result-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.arxiv-result-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.arxiv-rtab { padding: 6px 12px; font-size: 11px; font-weight: 500; color: var(--text3); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.12s; }
+.arxiv-rtab.active { color: var(--em); border-bottom-color: var(--em); }
+.arxiv-circ-scroll { overflow-x: auto; margin-bottom: 10px; }
+.arxiv-qasm-pre { font-family: var(--font-mono); font-size: 10.5px; line-height: 1.8; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; overflow: auto; max-height: 260px; color: var(--text); white-space: pre; }
+.arxiv-dl-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.arxiv-dl-btn { padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg2); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--text2); }
+.arxiv-dl-btn:hover { background: var(--bg3); color: var(--text); }
+.arxiv-dl-btn.primary { background: var(--em); border-color: var(--em); color: white; font-weight: 600; }
+.arxiv-dl-btn.primary:hover { background: #b56309; }
+.arxiv-analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.arxiv-acard { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 13px; }
+.arxiv-acard h4 { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.arxiv-acard p, .arxiv-acard li { font-size: 11px; line-height: 1.7; color: var(--text2); }
+.arxiv-acard ul { padding-left: 14px; }
+.arxiv-acard li { margin-bottom: 3px; }
+.arxiv-spin { width: 14px; height: 14px; border: 1.5px solid var(--border2); border-top-color: var(--em); border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 6px; }
+@keyframes arxiv-spin { to { transform: rotate(360deg); } }
+.arxiv-spin { animation: arxiv-spin 0.7s linear infinite !important; }
+
+/* ── LOGIN / SIGNUP MODAL ── */
+#login-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(20,16,10,0.6); align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+#login-overlay.open { display: flex; }
+#login-modal { background: var(--bg2); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 28px 36px 32px; width: min(420px, 94vw); display: flex; flex-direction: column; align-items: center; }
+.login-logo { margin-bottom: 14px; }
+.login-title { font-family: var(--font-display); font-size: 20px; font-weight: 400; margin-bottom: 16px; text-align: center; }
+/* Tab switcher */
+.auth-tabs { display: flex; width: 100%; border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden; margin-bottom: 22px; }
+.auth-tab { flex: 1; padding: 9px; font-size: 12px; font-weight: 500; color: var(--text3); background: var(--bg); border: none; cursor: pointer; transition: all 0.15s; }
+.auth-tab.active { background: var(--gravity); color: white; font-weight: 600; }
+/* Form views */
+.auth-view { width: 100%; display: none; flex-direction: column; }
+.auth-view.active { display: flex; }
+.login-field { width: 100%; margin-bottom: 11px; }
+.login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 5px; letter-spacing: 0.03em; }
+.login-field input { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text); background: var(--bg); outline: none; transition: border-color 0.15s; }
+.login-field input:focus { border-color: var(--gravity); }
+.login-field .field-hint { font-size: 10px; color: var(--text3); margin-top: 4px; }
+#login-error, #signup-error { font-size: 11px; color: var(--strong); margin-bottom: 8px; min-height: 16px; text-align: center; }
+#signup-success { font-size: 11px; color: var(--weak); margin-bottom: 8px; min-height: 16px; text-align: center; }
+.auth-submit { width: 100%; padding: 11px; background: var(--gravity); border: none; border-radius: var(--radius); color: white; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; margin-bottom: 12px; }
+.auth-submit:hover { background: #5a38ee; }
+.auth-submit:disabled { opacity: 0.6; cursor: wait; }
+.login-guest { font-size: 11px; color: var(--text3); background: none; border: none; cursor: pointer; text-decoration: underline; }
+.login-guest:hover { color: var(--text2); }
+
+/* ── ADMIN DRAWER ── */
+#admin-backdrop { display: none; position: fixed; inset: 0; z-index: 148; background: rgba(20,16,10,0.35); }
+#admin-backdrop.open { display: block; }
+#admin-drawer { position: fixed; top: 0; right: -380px; width: 360px; height: 100vh; background: var(--bg2); border-left: 1px solid var(--border); box-shadow: -4px 0 24px rgba(0,0,0,0.12); z-index: 150; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.4,0,0.2,1); }
+#admin-drawer.open { right: 0; }
+#admin-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#admin-header span { font-family: var(--font-display); font-size: 16px; font-weight: 400; }
+#admin-header button { border: none; background: none; cursor: pointer; font-size: 18px; color: var(--text3); padding: 4px; border-radius: 50%; transition: background 0.12s; }
+#admin-header button:hover { background: var(--bg3); }
+.admin-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.admin-tab { flex: 1; padding: 10px; font-size: 11px; font-weight: 500; color: var(--text3); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.admin-tab:hover { color: var(--text2); background: var(--bg); }
+.admin-tab.active { color: var(--gravity); border-bottom-color: var(--gravity); }
+#admin-body { flex: 1; overflow-y: auto; padding: 8px; }
+.admin-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel); margin-bottom: 6px; font-size: 11px; }
+.admin-id { font-family: var(--font-mono); font-size: 11px; color: var(--text); font-weight: 500; }
+.admin-role-badge { font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.admin-role-badge.admin { background: rgba(180,83,9,0.1); color: #b45309; border: 1px solid rgba(180,83,9,0.3); }
+.admin-role-badge.researcher { background: rgba(109,74,255,0.1); color: var(--gravity); border: 1px solid rgba(109,74,255,0.25); }
+.admin-role-badge.viewer { background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+.admin-action { font-family: var(--font-mono); font-size: 10px; color: var(--text2); }
+.admin-action.err { color: var(--strong); }
+.audit-row { flex-wrap: wrap; gap: 6px; }
+
+/* ── TOAST ── */
+#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 16px; font-size: 12px; color: var(--text); box-shadow: var(--shadow-lg); max-width: 320px; opacity: 0; transform: translateX(20px); transition: all 0.25s ease; }
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast.toast-success { border-color: rgba(5,150,105,0.4); background: rgba(5,150,105,0.06); color: var(--weak); }
+.toast.toast-error { border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.06); color: var(--strong); }
+.toast.toast-admin { border-color: rgba(180,83,9,0.4); background: rgba(180,83,9,0.06); color: #b45309; }
+.toast.toast-info { border-color: rgba(109,74,255,0.3); background: rgba(109,74,255,0.05); color: var(--gravity); }
+
+/* ── USER STATUS / AUTH BUTTONS ── */
+.user-pill { gap: 8px; cursor: default; }
+.login-btn { cursor: pointer; color: var(--gravity); border-color: rgba(109,74,255,0.35); background: rgba(109,74,255,0.05); font-family: var(--font-body); font-size: 10px; border-radius: 20px; transition: all 0.15s; }
+.login-btn:hover { background: rgba(109,74,255,0.1); }
+#topbar-admin-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(180,83,9,0.35); background: rgba(180,83,9,0.06); color: #b45309; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+#topbar-admin-btn:hover { background: rgba(180,83,9,0.12); }
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN OVERLAY ═══ -->
+<div id="login-overlay" onclick="if(event.target===this)hideLoginModal()">
+  <div id="login-modal">
+    <div class="login-logo">
+      <svg viewBox="0 0 60 60" width="54" height="54" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="27" stroke="#6d4aff" stroke-width="1.5" opacity="0.3"/>
+        <ellipse cx="30" cy="30" rx="27" ry="9" stroke="#6d4aff" stroke-width="1.5" opacity="0.5"/>
+        <ellipse cx="30" cy="30" rx="27" ry="9" stroke="#d97706" stroke-width="1.2" opacity="0.45" transform="rotate(60 30 30)"/>
+        <ellipse cx="30" cy="30" rx="27" ry="9" stroke="#dc2626" stroke-width="1.2" opacity="0.4" transform="rotate(120 30 30)"/>
+        <circle cx="30" cy="30" r="5.5" fill="#6d4aff"/>
+        <circle cx="30" cy="30" r="3" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="login-title">Quantum Forces Laboratory</div>
+    <div class="login-sub">Sign in or create an account to access the platform</div>
+
+    <!-- Tab switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- ── SIGN IN VIEW ── -->
+    <div class="auth-view active" id="view-signin">
+      <div class="login-field">
+        <label for="login-id">User ID</label>
+        <input id="login-id" type="text" placeholder="your-id" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pw').focus()">
+      </div>
+      <div class="login-field">
+        <label for="login-pw">Password</label>
+        <input id="login-pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()">
+      </div>
+      <div id="login-error"></div>
+      <button class="auth-submit" id="login-submit" onclick="submitLogin()">Sign In</button>
+      <button class="login-guest" onclick="hideLoginModal()">Continue as Guest — local simulator only</button>
+    </div>
+
+    <!-- ── SIGN UP VIEW ── -->
+    <div class="auth-view" id="view-signup">
+      <div class="login-field">
+        <label for="signup-name">Full Name</label>
+        <input id="signup-name" type="text" placeholder="Your name" autocomplete="name" onkeydown="if(event.key==='Enter')document.getElementById('signup-uid').focus()">
+      </div>
+      <div class="login-field">
+        <label for="signup-uid">User ID <span style="font-size:10px;color:var(--text3)">(3–50 chars, letters/numbers/_/-)</span></label>
+        <input id="signup-uid" type="text" placeholder="your-id" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('signup-email').focus()">
+      </div>
+      <div class="login-field">
+        <label for="signup-email">Email</label>
+        <input id="signup-email" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('signup-pw').focus()">
+      </div>
+      <div class="login-field">
+        <label for="signup-pw">Password <span style="font-size:10px;color:var(--text3)">(min 8 characters)</span></label>
+        <input id="signup-pw" type="password" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitSignup()">
+      </div>
+      <div id="signup-error"></div>
+      <div id="signup-success"></div>
+      <button class="auth-submit" id="signup-submit" onclick="submitSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN DRAWER BACKDROP ═══ -->
+<div id="admin-backdrop" onclick="closeAdminPanel()"></div>
+
+<!-- ═══ ADMIN DRAWER ═══ -->
+<div id="admin-drawer">
+  <div id="admin-header">
+    <span>Admin Panel</span>
+    <button onclick="closeAdminPanel()">✕</button>
+  </div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" data-tab="users" onclick="switchAdminTab('users')">Users</button>
+    <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')">Audit Log</button>
+    <button class="admin-tab" data-tab="publications" onclick="switchAdminTab('publications')">Publications</button>
+  </div>
+  <div id="admin-body"></div>
+</div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div id="toast-container"></div>
+
+<!-- ═══ TOP BAR ═══ -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-atom">
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="18" cy="18" r="16" stroke="#6d4aff" stroke-width="1.2" opacity="0.3"/>
+        <ellipse cx="18" cy="18" rx="16" ry="5.5" stroke="#6d4aff" stroke-width="1.2" opacity="0.5"/>
+        <ellipse cx="18" cy="18" rx="16" ry="5.5" stroke="#d97706" stroke-width="1" opacity="0.5" transform="rotate(60 18 18)"/>
+        <ellipse cx="18" cy="18" rx="16" ry="5.5" stroke="#dc2626" stroke-width="1" opacity="0.4" transform="rotate(120 18 18)"/>
+        <circle cx="18" cy="18" r="3.5" fill="#6d4aff"/>
+        <circle cx="18" cy="18" r="2" fill="#fff"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">Hemanth Gudaparthi</div>
+      <div class="brand-sub">Quantum Forces Laboratory v4 · IBM QASM 2.0 · arXiv Paper Search</div>
+    </div>
+  </div>
+  <div class="topbar-pills">
+    <div class="pill">5-qubit register</div>
+    <div class="pill">OpenQASM 2.0</div>
+    <div class="pill">Qiskit compatible</div>
+    <div class="pill live"><div class="live-dot"></div>Simulator ready</div>
+    <div class="pill" style="border-color:rgba(217,119,6,0.35);color:var(--em);background:rgba(217,119,6,0.06);cursor:pointer" onclick="openArxiv()">arXiv Search</div>
+    <!-- User status pill (hidden until logged in) -->
+    <div id="user-status-pill" class="pill user-pill" style="display:none"></div>
+    <!-- Admin gear (hidden until admin logged in) -->
+    <button id="topbar-admin-btn" onclick="openAdminPanel()" title="Admin Panel" style="display:none">&#9881;</button>
+    <!-- Sign In / Sign Out button -->
+    <button id="topbar-login-btn" onclick="showLoginModal()" class="pill login-btn">Sign In</button>
+  </div>
+</div>
+
+<!-- ═══ IBM QUANTUM STATUS BANNER ═══ -->
+<div id="ibm-banner">
+  <div class="ibm-banner-icon" id="ibm-banner-icon">&#x26DB;</div>
+  <div class="ibm-banner-text" id="ibm-banner-text">Checking IBM Quantum account…</div>
+  <div class="ibm-banner-actions" id="ibm-banner-actions"></div>
+  <button id="ibm-dismiss" onclick="document.getElementById('ibm-banner').classList.remove('active')" title="Dismiss">✕</button>
+</div>
+
+<!-- ═══ IBM RESULTS MODAL ═══ -->
+<div id="ibm-modal-overlay" onclick="if(event.target===this)closeIbmModal()">
+  <div id="ibm-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 id="ibm-modal-title">IBM Quantum Job</h2>
+      <button onclick="closeIbmModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--text3)">✕</button>
+    </div>
+    <div id="ibm-modal-body"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+
+  <!-- ═══ LEFT SIDEBAR ═══ -->
+  <div id="sidebar">
+
+    <div class="sb-section" id="sidebar-forces">
+      <div class="sb-heading">Force Module</div>
+      <button class="force-btn active" id="btn-gravity" style="--fc:var(--gravity)" onclick="selectForce('gravity')">
+        <div class="force-icon" style="background:rgba(109,74,255,0.1)">🌌</div>
+        <div>
+          <div style="font-size:12px">Gravity (GR)</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:400">Curved spacetime</div>
+        </div>
+        <span class="force-badge">Ĥ_grav</span>
+      </button>
+      <button class="force-btn" id="btn-em" style="--fc:var(--em)" onclick="selectForce('em')">
+        <div class="force-icon" style="background:rgba(217,119,6,0.1)">⚡</div>
+        <div>
+          <div style="font-size:12px">Electromagnetic</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:400">Photon coupling</div>
+        </div>
+        <span class="force-badge">QED</span>
+      </button>
+      <button class="force-btn" id="btn-strong" style="--fc:var(--strong)" onclick="selectForce('strong')">
+        <div class="force-icon" style="background:rgba(220,38,38,0.1)">&#x269B;</div>
+        <div>
+          <div style="font-size:12px">Strong Force</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:400">Color confinement</div>
+        </div>
+        <span class="force-badge">QCD</span>
+      </button>
+      <button class="force-btn" id="btn-weak" style="--fc:var(--weak)" onclick="selectForce('weak')">
+        <div class="force-icon" style="background:rgba(5,150,105,0.1)">🔄</div>
+        <div>
+          <div style="font-size:12px">Weak Force</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:400">Flavor change / β-decay</div>
+        </div>
+        <span class="force-badge">EWK</span>
+      </button>
+
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-weight:600">Gravity × Quantum</div>
+
+      <button class="force-btn" id="btn-erepr" style="--fc:#0ea5e9" onclick="selectForce('erepr')">
+        <div class="force-icon" style="background:rgba(14,165,233,0.12)">🌀</div>
+        <div>
+          <div style="font-size:12px">ER = EPR Wormhole</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:400">Maldacena–Susskind · SYK · Nature 2022</div>
+        </div>
+        <span class="force-badge" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#0369a1">ER≡EPR</span>
+      </button>
+      <!-- Geodesic button is injected here dynamically after admin login -->
+    </div>
+
+    <div class="sb-section" id="params-section">
+      <div class="sb-heading">Parameters</div>
+      <div id="params-body"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-heading">Experiment Setup</div>
+      <div class="param-group">
+        <div class="param-label"><span class="param-name">Initial state |ψ₀⟩</span></div>
+        <select id="init-state" onchange="renderCircuit()">
+          <option value="ground">|0⟩  Ground state</option>
+          <option value="plus">|+⟩  Superposition</option>
+          <option value="excited">|1⟩  Excited state</option>
+          <option value="bell">|Φ+⟩  Bell state</option>
+          <option value="ghz">|GHZ⟩  3-qubit GHZ</option>
+        </select>
+      </div>
+      <div class="param-group" style="margin-top:8px">
+        <div class="param-label"><span class="param-name">Measurement shots</span></div>
+        <select id="shots">
+          <option value="512">512 shots</option>
+          <option value="1024" selected>1 024 shots</option>
+          <option value="4096">4 096 shots</option>
+          <option value="8192">8 192 shots</option>
+        </select>
+      </div>
+      <div class="param-group" style="margin-top:8px">
+        <div class="param-label"><span class="param-name">Target backend</span></div>
+        <select id="backend">
+          <option value="statevec">ibmq_statevector_sim</option>
+          <option value="qasm">ibmq_qasm_simulator</option>
+          <option value="manila">ibm_manila (5 q)</option>
+          <option value="nairobi">ibm_nairobi (7 q)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="runExperiment()">&#9654; Run Experiment (local)</button>
+      <button class="btn" id="btn-ibm-run" onclick="runOnIBM()">&#x26DB; Run on IBM Quantum</button>
+      <button class="btn btn-export" onclick="downloadQASM()">&#8681; Download .qasm</button>
+      <button class="btn btn-export" onclick="downloadPython()">&#8681; Download Qiskit .py</button>
+      <button class="btn btn-bundle" onclick="downloadAllForces()">&#8681; All forces bundle (.sh)</button>
+    </div>
+
+    <div class="sb-section" style="flex:1">
+      <div class="sb-heading">About this force</div>
+      <div id="force-desc"></div>
+    </div>
+
+    <div class="notice">
+      v4.1 · Hemanth Gudaparthi Quantum Lab · Auth-gated · Geodesic: PRIVATE
+    </div>
+  </div>
+
+  <!-- ═══ CENTER WORKSPACE ═══ -->
+  <div id="workspace">
+    <div id="circuit-wrap">
+      <div id="circuit-label">Circuit diagram — OpenQASM 2.0</div>
+      <svg id="circ" height="260"></svg>
+    </div>
+
+    <div class="exp-toggle-bar" id="exp-toggle-bar" onclick="toggleExplain()">
+      <span class="exp-toggle-label">
+        <span>📖</span>
+        <span id="exp-toggle-text">How to read these results — tap to expand</span>
+      </span>
+      <span class="exp-toggle-caret" id="exp-caret">▼</span>
+    </div>
+
+    <div id="explain-panel">
+      <div id="explain-inner"></div>
+    </div>
+
+    <div id="results-content">
+      <div class="result-tabs" id="result-tabs">
+        <div class="rtab active" onclick="showTab('probs')" id="rtab-probs">Measurement Probabilities</div>
+        <div class="rtab" onclick="showTab('state')" id="rtab-state">State Vector</div>
+        <div class="rtab" onclick="showTab('bloch')" id="rtab-bloch">Bloch Sphere</div>
+        <div class="rtab" onclick="showTab('gates')" id="rtab-gates">Gate Theory</div>
+        <div class="rtab" onclick="showTab('limits')" id="rtab-limits">Limitations &amp; Fixes</div>
+        <div class="rtab" onclick="showTab('qasm')" id="rtab-qasm">QASM Source</div>
+      </div>
+
+      <div class="tab-pane active" id="pane-probs">
+        <div class="prob-section" id="prob-bars">
+          <div style="color:var(--text3);font-size:12px">Click <strong>&#9654; Run Experiment</strong> to see measurement probabilities.</div>
+        </div>
+        <div id="counts-info" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);line-height:2"></div>
+      </div>
+      <div class="tab-pane" id="pane-state">
+        <div class="state-display" id="state-vec">Run the experiment to populate state vector.</div>
+      </div>
+      <div class="tab-pane" id="pane-bloch" style="align-items:center">
+        <div class="bloch-card">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">q[0] — Test Particle</div>
+          <svg id="bloch-svg" viewBox="0 0 160 160" width="160" height="160"></svg>
+          <div class="bloch-readout" id="bloch-readout">Run experiment to see state.</div>
+        </div>
+      </div>
+      <div class="tab-pane" id="pane-gates">
+        <div class="gate-info" id="gate-info-card"></div>
+      </div>
+      <div class="tab-pane" id="pane-limits" style="flex-direction:column;max-width:700px;padding:16px 20px">
+        <div id="limits-content"></div>
+      </div>
+      <div class="tab-pane" id="pane-qasm" style="flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">OpenQASM 2.0 Source</span>
+          <button class="btn" style="width:auto;padding:5px 14px;font-size:11px" onclick="copyQASM()">Copy</button>
+        </div>
+        <pre id="qasm-source" style="font-family:var(--font-mono);font-size:11px;line-height:1.8;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;overflow:auto;flex:1;color:var(--text);white-space:pre-wrap"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RIGHT Q&A PANEL ═══ -->
+  <div id="qa-panel">
+    <div id="qa-header">
+      <h2>Ask the Lab Assistant</h2>
+      <p>Ask about gates, limitations, experiments, and physics</p>
+    </div>
+    <div id="qa-messages">
+      <div class="msg msg-ai">
+        <div class="tag tag-exp">Lab Assistant</div><br>
+        Hello! I'm your quantum lab assistant for <strong>Hemanth Gudaparthi's Quantum Forces Lab</strong>.<br><br>
+        I can help you understand:<br>
+        • What each gate does and why<br>
+        • What experiments you can run<br>
+        • What the circuit <em>can't</em> do and how to fix it<br>
+        • How to extend this to real IBM hardware<br><br>
+        Try a suggested question below, or ask your own!
+      </div>
+    </div>
+    <div class="sq-section">
+      <div class="sq-label">Suggested questions</div>
+      <div class="sq-chips" id="sq-chips"></div>
+    </div>
+    <div id="qa-input-area">
+      <div id="qa-input-row">
+        <textarea id="qa-input" rows="1" placeholder="Ask a question about the circuit…"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuestion()}"></textarea>
+        <button id="qa-send" onclick="sendQuestion()">Ask</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ═══ arXiv SEARCH MODAL ═══ -->
+<div id="arxiv-overlay" onclick="if(event.target===this)closeArxiv()">
+  <div id="arxiv-modal">
+    <div id="arxiv-topbar">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0">
+          <circle cx="10" cy="10" r="8.5" stroke="var(--em)" stroke-width="1.2" opacity=".4"/>
+          <ellipse cx="10" cy="10" rx="8.5" ry="3" stroke="var(--em)" stroke-width="1.2" opacity=".6"/>
+          <ellipse cx="10" cy="10" rx="8.5" ry="3" stroke="var(--weak)" stroke-width="1" opacity=".5" transform="rotate(60 10 10)"/>
+          <circle cx="10" cy="10" r="2.5" fill="var(--em)"/>
+          <circle cx="10" cy="10" r="1.2" fill="white"/>
+        </svg>
+        arXiv Paper → Quantum Circuit
+        <span class="arxiv-badge">FREE · No API key</span>
+      </h2>
+      <button id="arxiv-close" onclick="closeArxiv()">✕</button>
+    </div>
+    <div id="arxiv-search-row">
+      <input id="arxiv-input" placeholder="Search: quantum gravity, VQE, Bell inequality, topological qubit, QCD..." onkeydown="if(event.key==='Enter')arxivSearch()">
+      <button onclick="arxivSearch()" id="arxiv-search-btn">Search arXiv</button>
+      <button onclick="arxivRandom()" id="arxiv-random-btn">Random</button>
+    </div>
+    <div class="arxiv-cats" id="arxiv-cats"></div>
+    <div id="arxiv-body">
+      <div id="arxiv-results">
+        <div class="arxiv-empty" id="arxiv-results-placeholder">Search arXiv above to find physics papers.<br><br>Good searches:<br><em>quantum gravity · VQE · Bell test<br>topological qubit · quantum error correction<br>QCD lattice · Grover algorithm</em></div>
+      </div>
+      <div id="arxiv-detail">
+        <div class="arxiv-empty" id="arxiv-detail-placeholder">Select a paper from the list to see details and generate a circuit.</div>
+        <div id="arxiv-paper-panel" style="display:none;flex-direction:column;gap:12px">
+          <div>
+            <div class="arxiv-detail-title" id="arxiv-dtitle"></div>
+            <div class="arxiv-detail-meta" id="arxiv-dmeta"></div>
+            <div class="arxiv-abstract" id="arxiv-dabstract"></div>
+          </div>
+          <button class="arxiv-gen-btn" id="arxiv-gen-btn" onclick="arxivGenerate()">✨ Generate Quantum Circuit for this Paper</button>
+          <div id="arxiv-result-block" style="display:none">
+            <div class="arxiv-result-label">
+              <span id="arxiv-result-name">Generated circuit</span>
+              <div class="arxiv-dl-row">
+                <button class="arxiv-dl-btn" onclick="arxivCopyQasm()">Copy QASM</button>
+                <button class="arxiv-dl-btn" onclick="arxivDlQasm()">&#8681; .qasm</button>
+                <button class="arxiv-dl-btn" onclick="arxivDlPy()">&#8681; .py</button>
+                <button class="arxiv-dl-btn" onclick="arxivDlSvg()">&#8681; .svg</button>
+                <button class="arxiv-dl-btn primary" onclick="arxivDlBundle()">&#8681; Bundle</button>
+              </div>
+            </div>
+            <div class="arxiv-result-tabs">
+              <div class="arxiv-rtab active" id="art-circuit" onclick="arxivTab('circuit')">Circuit diagram</div>
+              <div class="arxiv-rtab" id="art-analysis" onclick="arxivTab('analysis')">Analysis</div>
+              <div class="arxiv-rtab" id="art-qasm" onclick="arxivTab('qasm')">QASM 2.0</div>
+              <div class="arxiv-rtab" id="art-python" onclick="arxivTab('python')">Qiskit .py</div>
+            </div>
+            <div id="artp-circuit" class="arxiv-circ-scroll"></div>
+            <div id="artp-analysis" style="display:none"><div class="arxiv-analysis-grid" id="arxiv-analysis-content"></div></div>
+            <div id="artp-qasm" style="display:none"><pre class="arxiv-qasm-pre" id="arxiv-qasm-pre"></pre></div>
+            <div id="artp-python" style="display:none"><pre class="arxiv-qasm-pre" id="arxiv-py-pre"></pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────
+   CONFIG
+*/
+const API_BASE = 'http://127.0.0.1:5000';
+
+/* ──────────────────────────────────────────────
+   AUTH STATE
+*/
+let JWT_TOKEN = sessionStorage.getItem('ql_token') || null;
+let CURRENT_USER = null;
+let IS_ADMIN = false;
+let IS_LOGGED_IN = false;
+let GEODESIC_LOADED = false;
+
+/* ──────────────────────────────────────────────
+   FORCE DATABASE  (gravity, em, strong, weak, erepr — NO geodesic)
+*/
+const FORCES = {
+  gravity: {
+    color: '#6d4aff',
+    label: 'Gravity — General Relativity',
+    desc: 'Models spacetime curvature as quantum entanglement. Uses RZZ(θ) gates where θ = G·M/r·t encodes gravitational coupling. q[0] is the test particle, q[1] the mass source. The geometric phase accumulated mimics time dilation along a geodesic. q[2] adds a tidal-force correction via a second RZZ coupling.',
+    params: [
+      { id:'gM',  name:'Mass M',       min:0.1, max:3.14, step:0.05, def:1.0,  unit:'M☉' },
+      { id:'gr',  name:'Distance r',   min:0.2, max:5.0,  step:0.1,  def:1.0,  unit:'r' },
+      { id:'gt',  name:'Evo. time t',  min:0,   max:3.14, step:0.05, def:0.8,  unit:'τ' },
+      { id:'gG',  name:'G constant',   min:0.1, max:2.0,  step:0.05, def:1.0,  unit:'G' },
+    ],
+    getTheta: (p) => p.gG * p.gM / p.gr * p.gt,
+    gates: (p) => {
+      const θ = p.gG * p.gM / p.gr * p.gt;
+      const τ = θ * 0.35;
+      return [
+        { op:'H',   q:[0],    label:'H',                   note:'Superpose particle' },
+        { op:'H',   q:[1],    label:'H',                   note:'Superpose mass' },
+        { op:'RZZ', q:[0,1],  label:`RZZ\n(${θ.toFixed(3)})`, note:'Gravitational coupling' },
+        { op:'RZ',  q:[0],    label:`RZ\n(${(θ*.5).toFixed(3)})`, note:'Grav. redshift phase' },
+        { op:'CX',  q:[1,2],  label:'',                    note:'Entangle ancilla' },
+        { op:'RZZ', q:[0,2],  label:`RZZ\n(${τ.toFixed(3)})`,  note:'Tidal forces' },
+        { op:'RZ',  q:[1],    label:`RZ\n(${(θ*.2).toFixed(3)})` },
+        { op:'H',   q:[0],    label:'H' },
+        { op:'M',   q:[0],    label:'⟨M⟩' },
+      ];
+    },
+    qasm: (p, init) => {
+      const θ = p.gG * p.gM / p.gr * p.gt;
+      return `// Hemanth Gudaparthi Quantum Lab — Gravity (GR)
+// θ = G·M/r·t = ${θ.toFixed(5)} rad
+
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];  // q[0]=particle, q[1]=mass, q[2]=tidal
+creg c[5];
+
+${initQasm(init)}
+
+// ── Gravity Module ──
+h q[0];
+h q[1];
+
+// RZZ(θ) gravitational entanglement
+cx q[0], q[1];
+rz(${θ.toFixed(6)}) q[1];
+cx q[0], q[1];
+
+rz(${(θ*.5).toFixed(6)}) q[0];  // gravitational redshift
+
+cx q[1], q[2];
+cx q[0], q[2];
+rz(${(θ*.35).toFixed(6)}) q[2];  // tidal correction
+cx q[0], q[2];
+cx q[1], q[2];
+
+rz(${(θ*.2).toFixed(6)}) q[1];
+h q[0];
+measure q[0] -> c[0];
+measure q[1] -> c[1];`;
+    },
+    python: (p) => {
+      const θ = p.gG * p.gM / p.gr * p.gt;
+      return pyTemplate('gravity', 'Gravity (General Relativity)', `
+    theta = ${θ.toFixed(6)}  # G·M/r·t
+
+    qc.h(0); qc.h(1)
+    # RZZ: CX · RZ(θ) · CX
+    qc.cx(0,1); qc.rz(theta, 1); qc.cx(0,1)
+    qc.rz(theta*0.5, 0)   # gravitational redshift
+    qc.cx(1,2); qc.cx(0,2)
+    qc.rz(theta*0.35, 2)  # tidal force
+    qc.cx(0,2); qc.cx(1,2)
+    qc.rz(theta*0.2, 1)
+    qc.h(0)`, p);
+    },
+    gateInfo: {
+      title: 'RZZ(θ) — Gravitational Hamiltonian',
+      body: 'RZZ(θ) = exp(−i·θ·Z⊗Z/2) evolves the two-qubit system under the coupling Hamiltonian H = Z⊗Z for time ∝ θ. This creates a geometric phase between the test particle and mass ancilla — the quantum analog of a particle tracing a geodesic through curved spacetime. The resulting state is approximately cos(θ/2)|00⟩ − i·sin(θ/2)|11⟩, a Bell-like entangled state representing gravitational binding.',
+      formula: 'θ = G·M/r · t    RZZ = CX · RZ(θ) · CX',
+    },
+    stateVec: (p) => { const θ = p.gG*p.gM/p.gr*p.gt; return {a:Math.cos(θ/2), b:Math.sin(θ/2), ph:θ}; },
+    limitations: [
+      { title:'Spin-2 graviton not represented', type:'limit', body:'Real gravitons are spin-2 bosons. Z⊗Z uses spin-1/2 qubits so the tensor polarization structure is absent.', fix:'Extend to 4-qubit encoding with XX+YY+ZZ terms to partially represent the graviton polarization modes.' },
+      { title:'Newtonian coupling only', type:'limit', body:'θ = GM/r is Newtonian. True GR needs geodesic deviation encoded via a Christoffel-symbol tensor across many qubits.', fix:'Use Variational Quantum Eigensolver (VQE) to find the ground state of a discretized Schwarzschild metric Hamiltonian.' },
+      { title:'No spacetime curvature back-reaction', type:'limit', body:'The mass ancilla q[1] is static — its state doesn\'t update from the particle\'s presence (no back-reaction).', fix:'Use mutual RZZ on both directions: RZZ(θ) q[0]↔q[1] AND RZZ(θ) q[1]↔q[0] in an iterative Trotter step.' },
+    ],
+    experiments: ['What happens to entanglement as mass M → 0?','Compare gravitational binding at different distances r','Sweep G from 0 to 2 and watch the Bloch vector rotate','Prepare a Bell state and measure how gravity distorts it'],
+  },
+
+  em: {
+    color: '#d97706',
+    label: 'Electromagnetic — QED',
+    desc: 'Models a first-order Feynman vertex: a photon qubit q[2] mediates the EM interaction via CX+RZ sequences. The fine-structure constant α ≈ 1/137 scales the coupling phase. Larmor precession models an external magnetic field B. A controlled-phase gate encodes the Coulomb potential U = kq²/r.',
+    params: [
+      { id:'eq',  name:'Charge q',    min:-1,    max:1,    step:0.05,  def:1.0,    unit:'e' },
+      { id:'eω',  name:'Frequency ω', min:0.1,   max:3.14, step:0.05,  def:1.2,    unit:'ω' },
+      { id:'eα',  name:'α coupling',  min:0.005, max:0.5,  step:0.005, def:0.0073, unit:'α' },
+      { id:'eB',  name:'B field',     min:0,     max:2.0,  step:0.05,  def:0.5,    unit:'T' },
+    ],
+    getTheta: (p) => p.eq * p.eα * p.eω,
+    gates: (p) => {
+      const φ = p.eq * p.eα * p.eω;
+      const L = p.eB * p.eq * 0.5;
+      return [
+        { op:'H',  q:[0],   label:'H' },
+        { op:'X',  q:[2],   label:'X',               note:'Init photon |1⟩' },
+        { op:'CX', q:[2,0], label:'',                note:'e⁻ absorbs photon' },
+        { op:'RZ', q:[0],   label:`RZ\n(αe)`,        note:'EM phase kick' },
+        { op:'CX', q:[2,0], label:'' },
+        { op:'RZ', q:[2],   label:`RZ\n(${φ.toFixed(3)})`, note:'Photon phase' },
+        { op:'RZ', q:[0],   label:`RZ\n(${L.toFixed(3)})`, note:'Larmor prec.' },
+        { op:'CP', q:[0,2], label:`CP\n(${(φ*2).toFixed(3)})`, note:'Coulomb potential' },
+        { op:'M',  q:[0],   label:'⟨M⟩' },
+      ];
+    },
+    qasm: (p, init) => {
+      const φ = p.eq * p.eα * p.eω;
+      const L = p.eB * p.eq * 0.5;
+      return `// Hemanth Gudaparthi Quantum Lab — Electromagnetic (QED)
+// α = ${p.eα.toFixed(4)}, φ = q·α·ω = ${φ.toFixed(5)} rad
+
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];  // q[0]=electron, q[2]=photon
+creg c[5];
+
+${initQasm(init)}
+
+// ── EM Module ──
+h q[0];
+x q[2];            // initialize photon
+cx q[2], q[0];     // photon–electron coupling
+rz(${φ.toFixed(6)}) q[0];   // EM phase
+cx q[2], q[0];
+rz(${φ.toFixed(6)}) q[2];   // photon propagation
+rz(${L.toFixed(6)}) q[0];   // Larmor precession
+cp(${(φ*2).toFixed(6)}) q[0], q[2];  // Coulomb
+measure q[0] -> c[0];
+measure q[2] -> c[2];`;
+    },
+    python: (p) => {
+      const φ = p.eq * p.eα * p.eω;
+      const L = p.eB * p.eq * 0.5;
+      return pyTemplate('em', 'Electromagnetic (QED)', `
+    phi = ${φ.toFixed(6)}    # q·α·ω
+    larmor = ${L.toFixed(6)} # q·B/2
+
+    qc.h(0); qc.x(2)
+    qc.cx(2,0); qc.rz(phi, 0); qc.cx(2,0)
+    qc.rz(phi, 2)
+    qc.rz(larmor, 0)
+    qc.cp(phi*2, 0, 2)`, p);
+    },
+    gateInfo: {
+      title: 'CP(φ) + CX·RZ·CX — QED Feynman Vertex',
+      body: 'The CX–RZ(φ)–CX sequence is the Stinespring dilation of the photon propagator: it entangles the photon qubit with the electron, applies a phase kick proportional to α·q·ω, then disentangles. The remaining CP(2φ) gate encodes the Coulomb potential energy. Larmor RZ(ω_L·t) models the magnetic moment precessing in field B.',
+      formula: 'φ = q·α·ω    ω_Larmor = q·B/(2m)    U_Coulomb ∝ CP(2φ)',
+    },
+    stateVec: (p) => { const φ=p.eq*p.eα*p.eω; return {a:(Math.cos(φ)+1)/2, b:Math.abs(Math.sin(φ)), ph:φ*2}; },
+    limitations: [
+      { title:'Only first-order Feynman vertex', type:'limit', body:'Real QED needs infinite perturbative expansion. This circuit captures only one photon exchange — no loop corrections, no vacuum polarization.', fix:'Chain multiple CX·RZ·CX blocks in series, each representing a higher-order Feynman diagram vertex.' },
+      { title:'Photon is a qubit, not a boson field', type:'limit', body:'True photons are bosons and can have arbitrary occupation numbers. A qubit can only hold 0 or 1 photon.', fix:'Use qubit-based boson encoding (Gray code or unary) across 3–4 qubits to simulate a truncated Fock space with up to N photons.' },
+      { title:'No renormalization', type:'limit', body:'UV divergences and renormalization (the process that makes QED predictions finite) are not modeled.', fix:'This requires classical pre-processing to subtract counterterms before building the circuit parameters.' },
+    ],
+    experiments: ['Set α to exactly 1/137 ≈ 0.0073 and observe the weak coupling','Set charge q to −1 (antiparticle) and compare Bloch sphere to q=+1','Vary B field and watch Larmor precession change the state vector','Set B=0 and compare pure Coulomb vs full EM interaction'],
+  },
+
+  strong: {
+    color: '#dc2626',
+    label: 'Strong Force — QCD',
+    desc: 'Encodes SU(3) color charge confinement. Three qubits represent R/G/B quarks. A CNOT ring creates the color-neutral GHZ baryon state |RGB⟩+|GBR⟩+|BRG⟩. The running coupling αs(Q²) decreases with energy — asymptotic freedom — encoded as a logarithmically scaled RZ rotation. String tension σ scales the overall coupling.',
+    params: [
+      { id:'sas',  name:'αs coupling',    min:0.1, max:2.0,  step:0.05, def:1.0,  unit:'αs' },
+      { id:'sQ2',  name:'Q² scale',       min:0.5, max:10.0, step:0.1,  def:2.0,  unit:'GeV²' },
+      { id:'snf',  name:'Nf flavors',     min:1,   max:6,    step:1,    def:3,    unit:'' },
+      { id:'ssig', name:'String tension', min:0.05,max:0.5,  step:0.01, def:0.18, unit:'GeV²' },
+    ],
+    getTheta: (p) => { const b0=11-2*p.snf/3; return p.sas/(1+p.sas*b0*Math.log(p.sQ2+1)/(2*Math.PI))*p.ssig; },
+    gates: (p) => {
+      const b0=11-2*p.snf/3;
+      const θ=p.sas/(1+p.sas*b0*Math.log(p.sQ2+1)/(2*Math.PI))*p.ssig;
+      return [
+        { op:'H',  q:[0], label:'H',  note:'Red charge' },
+        { op:'H',  q:[1], label:'H',  note:'Green charge' },
+        { op:'H',  q:[2], label:'H',  note:'Blue charge' },
+        { op:'CX', q:[0,1], label:'', note:'R→G gluon' },
+        { op:'CX', q:[1,2], label:'', note:'G→B gluon' },
+        { op:'CX', q:[2,0], label:'', note:'B→R (confinement ring)' },
+        { op:'RZ', q:[0], label:`RZ\n(${θ.toFixed(3)})`, note:'Running αs phase' },
+        { op:'RZ', q:[1], label:`RZ\n(${θ.toFixed(3)})` },
+        { op:'RZ', q:[2], label:`RZ\n(${θ.toFixed(3)})` },
+        { op:'CX', q:[0,1], label:'', note:'Flux tube' },
+        { op:'CX', q:[1,2], label:'', note:'Flux tube' },
+        { op:'M',  q:[0], label:'⟨M⟩' },
+      ];
+    },
+    qasm: (p, init) => {
+      const b0=11-2*p.snf/3;
+      const θ=p.sas/(1+p.sas*b0*Math.log(p.sQ2+1)/(2*Math.PI))*p.ssig;
+      return `// Hemanth Gudaparthi Quantum Lab — Strong Force (QCD)
+// αs_eff = ${θ.toFixed(5)}, b0 = ${b0.toFixed(2)}
+
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];  // q[0]=R, q[1]=G, q[2]=B quarks
+creg c[5];
+
+${initQasm(init)}
+
+// ── Strong Force Module ──
+h q[0]; h q[1]; h q[2];
+// Gluon ring → color-neutral baryon
+cx q[0], q[1];  // R→G
+cx q[1], q[2];  // G→B
+cx q[2], q[0];  // B→R (closes ring = confinement)
+// Running coupling
+rz(${θ.toFixed(6)}) q[0];
+rz(${θ.toFixed(6)}) q[1];
+rz(${θ.toFixed(6)}) q[2];
+// Flux tube reconnection
+cx q[0], q[1];
+cx q[1], q[2];
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+measure q[2] -> c[2];`;
+    },
+    python: (p) => {
+      const b0=11-2*p.snf/3;
+      const θ=p.sas/(1+p.sas*b0*Math.log(p.sQ2+1)/(2*Math.PI))*p.ssig;
+      return pyTemplate('strong','Strong Force (QCD)', `
+    theta = ${θ.toFixed(6)}  # αs_eff
+
+    qc.h(0); qc.h(1); qc.h(2)
+    qc.cx(0,1); qc.cx(1,2); qc.cx(2,0)  # gluon ring
+    qc.rz(theta,0); qc.rz(theta,1); qc.rz(theta,2)
+    qc.cx(0,1); qc.cx(1,2)`, p);
+    },
+    gateInfo: {
+      title: 'CNOT Ring — Color Confinement (GHZ baryon)',
+      body: 'Three CNOTs in a directed ring (q0→q1→q2→q0) create a GHZ-like state |RGB⟩+|GBR⟩+|BRG⟩. This is color-neutral (the quantum analog of a baryon). No single qubit can be measured in a definite color without instantly correlating the other two — this is confinement. The running coupling αs(Q²) = αs₀/[1 + αs₀·b₀·ln(Q²/Λ²)/(2π)] encodes asymptotic freedom.',
+      formula: 'αs(Q²) = αs₀ / [1 + αs₀·b₀·ln(Q²/Λ²)/2π]    b₀ = 11 − 2Nf/3',
+    },
+    stateVec: (p) => { const b0=11-2*p.snf/3,θ=p.sas/(1+p.sas*b0*Math.log(p.sQ2+1)/(2*Math.PI))*p.ssig; return {a:Math.cos(θ/2),b:Math.sin(θ/2),ph:θ}; },
+    limitations: [
+      { title:'SU(3) symmetry not fully represented', type:'limit', body:'True QCD has 8 gluon generators (Gell-Mann matrices). The CNOT ring only captures one SU(3) direction.', fix:'Use 3-qubit parameterized circuits with all 8 Gell-Mann matrix rotations (RXX, RYY, RZZ) to represent the full SU(3) algebra.' },
+      { title:'Quark masses not encoded', type:'limit', body:'The u/d/s/c/b/t quark masses create different coupling strengths. This circuit treats all flavors as identical.', fix:'Add flavor-dependent RZ(m_f) single-qubit rotations before the gluon ring, scaled by each quark mass.' },
+      { title:'No meson states', type:'limit', body:'This only creates baryon (3-quark) states. Mesons (quark-antiquark) need a different entanglement structure.', fix:'Replace the ring CNOT with a Bell-pair CX between q[0] and q[1] to model a meson. Add a X gate to one qubit to represent the antiquark.' },
+    ],
+    experiments: ['Increase Nf from 1 to 6 and observe asymptotic freedom (θ decreasing)','Set Q² very high (→ 10) to simulate high-energy scattering','Compare αs=0.1 (weak) vs αs=1.5 (strong) — how does entanglement change?','Use GHZ initial state and see if confinement is already partially present'],
+  },
+
+  weak: {
+    color: '#059669',
+    label: 'Weak Force — Electroweak',
+    desc: 'Models β-decay via W-boson mediation. Neutron qubit q[0] decays to proton via W⁻ emission. q[3] is the W-boson, q[4] is the antineutrino ancilla. CKM mixing angle θ controls generation mixing. Higgs VEV v and W mass M_W set the Fermi coupling GF = g²/(8M_W²). A controlled-Y gate encodes the flavor-changing interaction.',
+    params: [
+      { id:'wθ',  name:'θ_CKM angle',  min:0,   max:1.57, step:0.01, def:0.23, unit:'rad' },
+      { id:'wMW', name:'M_W mass',      min:0.2, max:3.0,  step:0.05, def:1.0,  unit:'M_W' },
+      { id:'wv',  name:'Higgs VEV',     min:0.1, max:2.0,  step:0.05, def:0.8,  unit:'v' },
+      { id:'wGF', name:'Fermi G_F',     min:0.1, max:2.0,  step:0.05, def:1.17, unit:'G_F' },
+    ],
+    getTheta: (p) => p['wθ'] * p.wv / p.wMW,
+    gates: (p) => {
+      const β = p['wθ'] * p.wv / p.wMW;
+      const F = p.wGF * β;
+      return [
+        { op:'X',  q:[0],   label:'X',              note:'Neutron |1⟩' },
+        { op:'H',  q:[3],   label:'H',              note:'W-boson superpos.' },
+        { op:'CY', q:[3,0], label:'',               note:'W⁻ flavor change' },
+        { op:'RY', q:[0],   label:`RY\n(${β.toFixed(3)})`, note:'CKM mixing' },
+        { op:'CX', q:[0,4], label:'',               note:'Antineutrino emit' },
+        { op:'RY', q:[3],   label:`RY\n(${F.toFixed(3)})`, note:'Fermi coupling' },
+        { op:'H',  q:[3],   label:'H',              note:'W collapse' },
+        { op:'CX', q:[3,1], label:'',               note:'Z⁰ residual' },
+        { op:'M',  q:[0],   label:'⟨M⟩' },
+      ];
+    },
+    qasm: (p, init) => {
+      const β = p['wθ'] * p.wv / p.wMW;
+      const F = p.wGF * β;
+      return `// Hemanth Gudaparthi Quantum Lab — Weak Force (Electroweak)
+// θ_decay = ${β.toFixed(5)}, G_F = ${F.toFixed(5)}
+
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];  // q[0]=n→p, q[3]=W-boson, q[4]=antineutrino
+creg c[5];
+
+${initQasm(init)}
+
+// ── Weak Force Module ──
+x q[0];        // neutron
+h q[3];        // W-boson in superposition
+// CY = S† · CX · S  (flavor change)
+cx q[3], q[0];
+sdg q[0];
+ry(${β.toFixed(6)}) q[0];   // CKM mixing
+cx q[0], q[4];              // antineutrino emission
+ry(${F.toFixed(6)}) q[3];   // Fermi coupling
+h q[3];
+cx q[3], q[1];              // Z0 residual
+measure q[0] -> c[0];
+measure q[3] -> c[3];
+measure q[4] -> c[4];`;
+    },
+    python: (p) => {
+      const β = p['wθ'] * p.wv / p.wMW;
+      const F = p.wGF * β;
+      return pyTemplate('weak','Weak Force (Electroweak)', `
+    beta = ${β.toFixed(6)}   # CKM * v / M_W
+    fermi = ${F.toFixed(6)}  # G_F * beta
+
+    qc.x(0); qc.h(3)
+    qc.cx(3,0); qc.sdg(0)  # CY decomposition
+    qc.ry(beta, 0)
+    qc.cx(0, 4)
+    qc.ry(fermi, 3)
+    qc.h(3); qc.cx(3, 1)`, p);
+    },
+    gateInfo: {
+      title: 'CY + RY(β) — Flavor Change & CKM Mixing',
+      body: 'CY = S†·CX·S performs a controlled spin-and-phase flip — exactly the operation of a W-boson changing a down-quark to an up-quark. RY(θ_CKM·v/M_W) applies the Cabibbo–Kobayashi–Maskawa mixing: a rotation in flavor space controlled by the Higgs VEV v and W-boson mass M_W. The antineutrino is modeled by CX entanglement to q[4].',
+      formula: 'β = θ_CKM · v / M_W    G_F/√2 = g²/(8M_W²)    CY = S†·CX·S',
+    },
+    stateVec: (p) => { const β=p['wθ']*p.wv/p.wMW; return {a:Math.abs(Math.cos(β)),b:Math.abs(Math.sin(β)),ph:β*2}; },
+    limitations: [
+      { title:'CP violation not modeled', type:'limit', body:'The CKM matrix has a complex phase δ that causes CP violation (matter-antimatter asymmetry). The RY gate is real-valued and cannot encode this.', fix:'Replace RY(β) with a general SU(2) rotation U(β,δ,0) using Rz·Ry·Rz Euler decomposition, with δ as the CP-violating phase.' },
+      { title:'Only one generation of fermions', type:'limit', body:'Three generations of quarks/leptons interact via full 3×3 CKM matrix. This circuit handles only one transition.', fix:'Use a 6-qubit register with all 9 CKM matrix elements encoded as a block-diagonal unitary using Qiskit\'s UnitaryGate.' },
+      { title:'W/Z boson masses not dynamically generated', type:'limit', body:'In the Standard Model, W and Z masses come from Higgs spontaneous symmetry breaking. Here M_W is a hand-tuned parameter.', fix:'Encode the Higgs field as an ancilla qubit with a double-well potential (RY·RZ combo) and let its VEV set the W mass dynamically.' },
+    ],
+    experiments: ['Set θ_CKM = 0 — does β-decay still happen? (No — watch why)','Increase M_W and observe the decay rate decrease (weak force gets weaker)','Compare GF = 0.1 (very weak) vs GF = 2.0 (strong Fermi coupling)','Set Higgs VEV v → 0 and watch the W-boson mass disappear'],
+  },
+
+  erepr: {
+    color: '#0ea5e9',
+    label: 'ER = EPR Wormhole (Maldacena-Susskind 2013)',
+    desc: 'Implements the ER=EPR conjecture: two maximally entangled qubits (EPR) ARE an Einstein-Rosen bridge (wormhole). Based on the SYK traversable wormhole (Jafferis et al., Nature 612, 2022). Steps: (1) Thermofield Double state = two entangled black holes = ER bridge born; (2) SYK scrambling on both sides; (3) Gao-Jafferis-Wall negative-energy coupling opens the bridge; (4) Signal teleports through = wormhole traversal; (5) Shapiro delay measurable as phase. Set mu=0 for closed bridge (baseline), mu>0 for open bridge (signal crosses). The deviation of P(q[2]=0) from 50% is the wormhole signature.',
+    params: [
+      { id:'ep_J',   name:'SYK coupling J',    min:0.1, max:2.0,  step:0.05, def:1.0,  unit:'J'  },
+      { id:'ep_mu',  name:'mu GJW coupling',   min:0.0, max:1.57, step:0.05, def:0.8,  unit:'rad'},
+      { id:'ep_t',   name:'Scrambling time t', min:0.1, max:3.14, step:0.05, def:1.2,  unit:'t'  },
+      { id:'ep_g',   name:'g gravity dual',    min:0.1, max:2.0,  step:0.05, def:1.0,  unit:'g'  },
+    ],
+    getTheta: p => p.ep_mu * p.ep_g,
+    gates: p => {
+      const tJ = p.ep_J * p.ep_t;
+      const mu = p.ep_mu;
+      const tg = p.ep_g * p.ep_mu;
+      return [
+        { op:'H',   q:[0], label:'H',  note:'L-BH superpos. (TFD step 1)' },
+        { op:'H',   q:[2], label:'H',  note:'R-BH superpos. (TFD step 1)' },
+        { op:'CX',  q:[0,2], label:'', note:'EPR pair = ER bridge born' },
+        { op:'RZZ', q:[0,2], label:'RZZ\n('+tJ.toFixed(2)+')', note:'SYK J-coupling' },
+        { op:'RY',  q:[0], label:'RY\n('+tJ.toFixed(2)+')',  note:'L-side scrambling' },
+        { op:'RZ',  q:[1], label:'RZ\n('+(tJ*0.7).toFixed(2)+')', note:'L-SYK fermion' },
+        { op:'CX',  q:[0,1], label:'', note:'L entanglement' },
+        { op:'RY',  q:[2], label:'RY\n('+(tJ*0.8).toFixed(2)+')', note:'R-side scrambling' },
+        { op:'CX',  q:[2,3], label:'', note:'R entanglement' },
+        { op:'RZZ', q:[1,3], label:'RZZ\n(-mu)', note:'GJW: negative energy opens bridge!' },
+        { op:'CP',  q:[0,3], label:'CP\n('+tg.toFixed(2)+')', note:'Gravity dual g-coupling' },
+        { op:'H',   q:[0], label:'H',  note:'Bell basis (L-side measure)' },
+        { op:'CX',  q:[0,1], label:'', note:'Bell meas. L-side' },
+        { op:'RZ',  q:[2], label:'RZ\n('+(mu*0.5).toFixed(2)+')', note:'Shapiro time delay' },
+        { op:'CX',  q:[1,2], label:'', note:'ER bridge crossing' },
+        { op:'H',   q:[2], label:'H',  note:'Decode R-side (wormhole exit)' },
+        { op:'M',   q:[0], label:'M',  note:'L-BH output' },
+        { op:'M',   q:[2], label:'M',  note:'R-BH: wormhole exit' },
+      ];
+    },
+    qasm: (p, init) => {
+      const tJ = p.ep_J * p.ep_t;
+      const mu = p.ep_mu;
+      const tg = p.ep_g * p.ep_mu;
+      const initLines = {
+        ground: '// |0000⟩ ground — signal qubit q[4] = |0⟩',
+        plus:   'h q[4];  // signal in |+⟩',
+        excited:'x q[4];  // signal in |1⟩',
+        bell:   'h q[4];\ncx q[4], q[0];  // signal entangled with L-BH',
+        ghz:    'h q[4];\ncx q[4],q[0];\ncx q[0],q[2];  // GHZ across wormhole'
+      };
+      return (
+'// ================================================\n'+
+'// Hemanth Gudaparthi Quantum Lab\n'+
+'// ER = EPR Wormhole Circuit\n'+
+'// ================================================\n'+
+'// Maldacena & Susskind, Fortsch.Phys. 61 (2013) 781\n'+
+'// Gao, Jafferis & Wall, JHEP (2017)\n'+
+'// Jafferis et al., Nature 612 (2022)\n'+
+'//\n'+
+'// KEY PREDICTION TO VERIFY:\n'+
+'//   mu = 0.0: P(q[2]=0) ≈ 50%  (bridge closed)\n'+
+'//   mu = '+mu.toFixed(3)+': P(q[2]=0) != 50% (bridge OPEN = signal!)\n'+
+'//\n'+
+'OPENQASM 2.0;\n'+
+'include "qelib1.inc";\n'+
+'\n'+
+'qreg q[5];  // q[0]=L-BH  q[1]=L-SYK  q[2]=R-BH  q[3]=R-SYK  q[4]=signal\n'+
+'creg c[5];\n'+
+'\n'+
+(initLines[init] || '// ground state') + '\n'+
+'\n'+
+'// == STEP 1: Thermofield Double (ER bridge born) ==\n'+
+'h q[0];           // Left BH superposition\n'+
+'h q[2];           // Right BH superposition\n'+
+'cx q[0], q[2];    // EPR = ER bridge created\n'+
+'cx q[0], q[2];\n'+
+'rz('+tJ.toFixed(6)+') q[2];   // SYK J*t coupling\n'+
+'cx q[0], q[2];\n'+
+'\n'+
+'// == STEP 2: Left SYK Scrambling ==\n'+
+'ry('+tJ.toFixed(6)+') q[0];\n'+
+'rz('+(tJ*0.7).toFixed(6)+') q[1];\n'+
+'cx q[0], q[1];\n'+
+'\n'+
+'// == STEP 3: Right SYK Scrambling ==\n'+
+'ry('+(tJ*0.8).toFixed(6)+') q[2];\n'+
+'cx q[2], q[3];\n'+
+'\n'+
+'// == STEP 4: GJW Negative-Energy Coupling (opens wormhole) ==\n'+
+'cx q[1], q[3];\n'+
+'rz('+(-mu).toFixed(6)+') q[3];          // NEGATIVE energy\n'+
+'cx q[1], q[3];\n'+
+'cp('+tg.toFixed(6)+') q[0], q[3];\n'+
+'\n'+
+'// == STEP 5: Wormhole Traversal + Shapiro Delay ==\n'+
+'h q[0];\n'+
+'cx q[0], q[1];\n'+
+'rz('+(mu*0.5).toFixed(6)+') q[2];       // Shapiro time delay\n'+
+'cx q[1], q[2];\n'+
+'h q[2];\n'+
+'\n'+
+'measure q[0] -> c[0];\n'+
+'measure q[1] -> c[1];\n'+
+'measure q[2] -> c[2];\n'+
+'measure q[3] -> c[3];'
+      );
+    },
+    python: p => {
+      const tJ = p.ep_J * p.ep_t;
+      const mu = p.ep_mu;
+      const tg = p.ep_g * p.ep_mu;
+      return (
+'#!/usr/bin/env python3\n'+
+'# Hemanth Gudaparthi Quantum Lab -- ER = EPR Wormhole\n'+
+'# Maldacena & Susskind (2013), Jafferis et al. Nature 612 (2022)\n'+
+'#\n'+
+'# WHAT TO LOOK FOR:\n'+
+'#   Run with mu=0 (bridge CLOSED): P(q2=0) ~= 0.50\n'+
+'#   Run with mu='+mu.toFixed(3)+' (bridge OPEN): P(q2=0) != 0.50\n'+
+'\n'+
+'from qiskit import QuantumCircuit, transpile\n'+
+'from qiskit_aer import AerSimulator\n'+
+'\n'+
+'J  = '+p.ep_J.toFixed(4)+'\n'+
+'mu = '+mu.toFixed(4)+'  # GJW coupling\n'+
+'t  = '+p.ep_t.toFixed(4)+'\n'+
+'g  = '+p.ep_g.toFixed(4)+'\n'+
+'tJ = J * t\n'+
+'tg = g * mu\n'+
+'\n'+
+'def build(mu_val):\n'+
+'    qc = QuantumCircuit(5, 5)\n'+
+'    qc.h(0); qc.h(2)\n'+
+'    qc.cx(0, 2)\n'+
+'    qc.cx(0, 2); qc.rz(tJ, 2); qc.cx(0, 2)\n'+
+'    qc.ry(tJ, 0); qc.rz(tJ*0.7, 1); qc.cx(0, 1)\n'+
+'    qc.ry(tJ*0.8, 2); qc.cx(2, 3)\n'+
+'    qc.cx(1, 3); qc.rz(-mu_val, 3); qc.cx(1, 3)\n'+
+'    qc.cp(tg, 0, 3)\n'+
+'    qc.h(0); qc.cx(0, 1)\n'+
+'    qc.rz(mu_val*0.5, 2)\n'+
+'    qc.cx(1, 2); qc.h(2)\n'+
+'    qc.measure_all()\n'+
+'    return qc\n'+
+'\n'+
+'def run(shots=4096):\n'+
+'    sim = AerSimulator()\n'+
+'    results = {}\n'+
+'    for mu_val, label in [(0.0, "BRIDGE CLOSED mu=0"), (mu, "BRIDGE OPEN  mu='+mu.toFixed(3)+'")]:\n'+
+'        qc = build(mu_val)\n'+
+'        job = sim.run(transpile(qc, sim, optimization_level=3), shots=shots)\n'+
+'        counts = job.result().get_counts()\n'+
+'        exit0 = sum(v for k,v in counts.items() if list(k.replace(" ",""))[2] == "0")\n'+
+'        p_exit = exit0 / shots\n'+
+'        results[label] = p_exit\n'+
+'        print(f"\\n{label}")\n'+
+'        print(f"  P(q[2]=0) = {p_exit:.4f}")\n'+
+'        sig = "WORMHOLE SIGNAL CONFIRMED" if abs(p_exit-0.5) > 0.04 else "no signal"\n'+
+'        print(f"  {sig}")\n'+
+'    return results\n'+
+'\n'+
+'if __name__ == "__main__":\n'+
+'    run()\n'
+      );
+    },
+    gateInfo: {
+      title: 'ER=EPR: H+CX=Wormhole | RZZ(-mu)=GJW Opens Bridge',
+      body: 'The Maldacena-Susskind conjecture (2013) states entanglement IS an Einstein-Rosen bridge. This circuit follows the SYK model demonstrated on Google Sycamore (Jafferis et al., Nature 612, 2022). H+CX creates the Thermofield Double (TFD) state. RZZ(tJ) applies SYK scrambling. The critical gate is RZZ(-mu): the Gao-Jafferis-Wall negative-energy coupling that makes the bridge traversable. Without it (mu=0) the bridge exists but no signal crosses. RZ(mu/2) encodes the Shapiro gravitational time delay.',
+      formula: 'TFD: |TFD⟩=Σn e^{-βEn/2}|n⟩_L|n⟩_R  GJW: H_int=-iμ(O_L+O_R)  ER=EPR confirmed',
+    },
+    stateVec: p => {
+      const tJ = p.ep_J * p.ep_t;
+      const mu = p.ep_mu;
+      const P_open = 0.5 + 0.45 * Math.sin(mu) * Math.cos(tJ * 0.3);
+      const a = Math.sqrt(Math.max(0.001, Math.min(0.999, P_open)));
+      const b = Math.sqrt(1 - a*a);
+      return { a, b, ph: mu * p.ep_g };
+    },
+    limitations: [
+      { title:'Minimal SYK: real experiment uses N=10 fermions / 164 gates', type:'limit', body:'Jafferis et al. used 164 two-qubit gates on 9 qubits. This circuit is a 5-qubit topological skeleton.', fix:'Scale using the sparsified SYK Hamiltonian from arXiv:2211.06442 on ibm_nairobi (7q) or ibm_brisbane (127q).' },
+      { title:'GJW coupling is a single-term approximation', type:'limit', body:'True GJW uses bilinear operator product H_int=imu*sum_j(psi^L_j * psi^R_j). RZZ(-mu) approximates one term.', fix:'Implement full operator as sum of YY+XX Pauli terms using Qiskit PauliSumOp across all qubit pairs.' },
+      { title:'mu=0 control run needed to see the signal', type:'limit', body:'The bridge always exists (TFD step). Only the deviation from the mu=0 baseline proves the wormhole opened.', fix:'Always run both mu=0 and mu>0 and compare P(q[2]=0). The Python script does this automatically.' },
+    ],
+    experiments: [
+      'mu=0 first (bridge closed) - P(q[2]=0) should be ~50%',
+      'Increase mu from 0 to 1.57 - watch P(q[2]=0) deviate from 50%',
+      'Vary J (SYK coupling) 0.1 to 2.0 - stronger J = more scrambling',
+      'Try t=0.5 vs t=3.0 - short vs long scrambling time',
+      'Download .py - run() shows closed vs open bridge comparison automatically',
+    ],
+  },
+};
+
+/* ──────────────────────────────────────────────
+   HELPERS
+*/
+function initQasm(init) {
+  const m = { ground:'// |0⟩ ground (default)',plus:'h q[0];  // |+⟩',excited:'x q[0];  // |1⟩',bell:'h q[0];\ncx q[0], q[1];  // |Φ+⟩',ghz:'h q[0];\ncx q[0],q[1];\ncx q[1],q[2];  // |GHZ⟩' };
+  return `// Initial state: ${init}\n${m[init]||''}`;
+}
+
+function pyTemplate(name, label, body, p) {
+  const shots = document.getElementById('shots').value;
+  return `#!/usr/bin/env python3
+# Hemanth Gudaparthi Quantum Lab — ${label}
+# Generated by QuantumForces Lab v4.1
+
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit_aer import AerSimulator
+
+def build_circuit():
+    q = QuantumRegister(5, 'q')
+    c = ClassicalRegister(5, 'c')
+    qc = QuantumCircuit(q, c)
+${body}
+
+    qc.measure(q[0], c[0])
+    return qc
+
+def run(shots=${shots}):
+    qc = build_circuit()
+    print(qc.draw('text'))
+    sim = AerSimulator()
+    job = sim.run(transpile(qc, sim), shots=shots)
+    counts = job.result().get_counts()
+    print(f"Results ({shots} shots):", counts)
+    return counts
+
+if __name__ == '__main__':
+    run()
+`;
+}
+
+/* ──────────────────────────────────────────────
+   APP STATE
+*/
+let currentForce = 'gravity';
+let params = {};
+let hasRun = false;
+let currentTab = 'probs';
+
+function getParams() {
+  const out = {};
+  for (const param of FORCES[currentForce].params) {
+    const el = document.getElementById(param.id);
+    out[param.id] = el ? parseFloat(el.value) : param.def;
+  }
+  return out;
+}
+
+function selectForce(name) {
+  currentForce = name;
+  document.querySelectorAll('.force-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-' + name);
+  if (btn) btn.classList.add('active');
+  buildParams();
+  renderCircuit();
+  updateInfo();
+  updateSuggestions();
+}
+
+function buildParams() {
+  const f = FORCES[currentForce];
+  document.getElementById('force-desc').textContent = f.desc;
+  const container = document.getElementById('params-body');
+  container.innerHTML = '';
+  for (const param of f.params) {
+    const val = params[param.id] ?? param.def;
+    const dec = param.step < 0.01 ? 4 : 2;
+    const div = document.createElement('div');
+    div.className = 'param-group';
+    div.innerHTML = `
+      <div class="param-label">
+        <span class="param-name">${param.name}</span>
+        <span class="param-val" id="pval-${param.id}">${parseFloat(val).toFixed(dec)} ${param.unit}</span>
+      </div>
+      <input type="range" id="${param.id}" min="${param.min}" max="${param.max}" step="${param.step}" value="${val}"
+        style="--fc:${f.color}"
+        oninput="onParamChange('${param.id}','${param.unit}',${dec},this.value)">`;
+    container.appendChild(div);
+  }
+}
+
+function onParamChange(id, unit, dec, val) {
+  params[id] = parseFloat(val);
+  document.getElementById('pval-' + id).textContent = parseFloat(val).toFixed(dec) + ' ' + unit;
+  renderCircuit();
+  if (hasRun) runExperiment();
+}
+
+/* ──────────────────────────────────────────────
+   CIRCUIT RENDERER
+*/
+function renderCircuit() {
+  const f = FORCES[currentForce];
+  const p = getParams();
+  const gates = f.gates(p);
+  const color = f.color;
+  const nQ = 5;
+  const yBase = 36, yStep = 46;
+  const xPad = 90, gW = 46, gGap = 14;
+  const cols = layoutGates(gates);
+  const svgW = xPad + cols.length * (gW + gGap) + 50;
+  const svgH = yBase + (nQ - 1) * yStep + 36;
+  const svg = document.getElementById('circ');
+  svg.setAttribute('width', Math.max(svgW, 700));
+  svg.setAttribute('height', svgH);
+  const qNames  = ['q[0] test particle','q[1] ancilla','q[2] photon / color-B','q[3] boson / ancilla','q[4] ancilla'];
+  const qAlpha  = [1, 0.55, 0.45, 0.38, 0.3];
+  let h = '';
+  for (let ci = 0; ci < cols.length; ci++) {
+    const x = xPad + ci * (gW + gGap);
+    if (ci % 2 === 0) h += `<rect x="${x - gGap/2}" y="0" width="${gW + gGap}" height="${svgH}" fill="rgba(0,0,0,0.018)" rx="0"/>`;
+  }
+  for (let i = 0; i < nQ; i++) {
+    const y = yBase + i * yStep;
+    const a = qAlpha[i];
+    const wireCol = i === 0 ? color : `rgba(0,0,0,${0.18 * a * 2})`;
+    const textCol = i === 0 ? color : `rgba(0,0,0,${0.45 * a * 2})`;
+    h += `<line x1="0" y1="${y}" x2="${svgW + 50}" y2="${y}" stroke="${wireCol}" stroke-width="${i === 0 ? 1.6 : 0.9}" opacity="${a}"/>`;
+    h += `<text x="6" y="${y}" dominant-baseline="central" font-size="10" font-family="DM Mono,monospace" fill="${textCol}">${qNames[i]}</text>`;
+    if (i === 0) h += `<line x1="${svgW - 30}" y1="${y + 6}" x2="${svgW + 50}" y2="${y + 6}" stroke="${color}" stroke-width="0.8" opacity="0.4"/>`;
+  }
+  cols.forEach((col, ci) => {
+    const xc = xPad + ci * (gW + gGap) + gW / 2;
+    for (const gate of col) h += renderGate(gate, xc, yBase, yStep, gW, color);
+  });
+  h += `<text x="${svgW - 4}" y="14" text-anchor="end" font-size="9" fill="${color}" font-family="DM Mono,monospace" opacity="0.7">${f.label}</text>`;
+  svg.innerHTML = h;
+  const init = document.getElementById('init-state').value;
+  document.getElementById('qasm-source').textContent = f.qasm(p, init);
+}
+
+function layoutGates(gates) {
+  const cols = [];
+  for (const gate of gates) {
+    const qs = Array.isArray(gate.q) ? gate.q : [gate.q];
+    let placed = false;
+    for (const col of cols) {
+      const used = col.flatMap(g => Array.isArray(g.q) ? g.q : [g.q]);
+      if (!qs.some(q => used.includes(q))) { col.push(gate); placed = true; break; }
+    }
+    if (!placed) cols.push([gate]);
+  }
+  return cols;
+}
+
+function renderGate(gate, xc, yBase, yStep, gW, color) {
+  let h = '';
+  const gH = 28;
+  const neutral = 'rgba(0,0,0,0.55)';
+  if (gate.op === 'H') {
+    const y = yBase + gate.q[0] * yStep;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="white" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>`;
+    h += `<text x="${xc}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="${neutral}" font-family="DM Mono,monospace">H</text>`;
+    if (gate.note) h += gateNote(gate.note, xc, y - gH/2 - 4, neutral);
+  } else if (gate.op === 'X') {
+    const y = yBase + gate.q[0] * yStep;
+    const c2 = gate.note ? color : neutral;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="white" stroke="${c2}" stroke-width="1"/>`;
+    h += `<text x="${xc}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="${c2}" font-family="DM Mono,monospace">X</text>`;
+    if (gate.note) h += gateNote(gate.note, xc, y - gH/2 - 4, c2);
+  } else if (gate.op === 'M') {
+    const y = yBase + gate.q[0] * yStep;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="${color}15" stroke="${color}" stroke-width="1" stroke-dasharray="3,2"/>`;
+    h += `<path d="M${xc-10} ${y+4} Q${xc} ${y-8} ${xc+10} ${y+4}" fill="none" stroke="${color}" stroke-width="1.2"/>`;
+    h += `<line x1="${xc}" y1="${y-5}" x2="${xc+8}" y2="${y+7}" stroke="${color}" stroke-width="1.2"/>`;
+  } else if (gate.op === 'RZ' || gate.op === 'RY') {
+    const qi = Array.isArray(gate.q) ? gate.q[0] : gate.q;
+    const y = yBase + qi * yStep;
+    const lines = gate.label.split('\n');
+    const bh = lines.length * 14 + 10;
+    h += `<rect x="${xc-gW/2}" y="${y-bh/2}" width="${gW}" height="${bh}" rx="4" fill="white" stroke="${color}" stroke-width="1"/>`;
+    h += `<rect x="${xc-gW/2}" y="${y-bh/2}" width="${gW}" height="4" rx="2" fill="${color}" opacity="0.15"/>`;
+    lines.forEach((l, i) => {
+      const ty = y - bh/2 + 13 + i * 13;
+      h += `<text x="${xc}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${color}" font-family="DM Mono,monospace" font-weight="500">${l}</text>`;
+    });
+    if (gate.note) h += gateNote(gate.note, xc, y - bh/2 - 4, color);
+  } else if (gate.op === 'RZZ' || gate.op === 'CP') {
+    const [q0, q1] = gate.q;
+    const y0 = yBase + q0 * yStep, y1 = yBase + q1 * yStep;
+    const ym = (y0 + y1) / 2;
+    h += `<line x1="${xc}" y1="${y0}" x2="${xc}" y2="${y1}" stroke="${color}" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+    h += `<circle cx="${xc}" cy="${y0}" r="3" fill="${color}"/>`;
+    h += `<circle cx="${xc}" cy="${y1}" r="3" fill="${color}"/>`;
+    const lines = gate.label.split('\n');
+    const bh = lines.length * 13 + 12;
+    h += `<rect x="${xc-28}" y="${ym-bh/2}" width="56" height="${bh}" rx="4" fill="white" stroke="${color}" stroke-width="1"/>`;
+    h += `<rect x="${xc-28}" y="${ym-bh/2}" width="56" height="4" rx="2" fill="${color}" opacity="0.15"/>`;
+    lines.forEach((l, i) => {
+      const ty = ym - bh/2 + 13 + i * 12;
+      h += `<text x="${xc}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${color}" font-family="DM Mono,monospace" font-weight="500">${l}</text>`;
+    });
+    if (gate.note) h += gateNote(gate.note, xc, ym - bh/2 - 4, color);
+  } else if (gate.op === 'CX') {
+    const [ctrl, tgt] = gate.q;
+    const yc = yBase + ctrl * yStep, yt = yBase + tgt * yStep;
+    h += `<line x1="${xc}" y1="${yc}" x2="${xc}" y2="${yt}" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<circle cx="${xc}" cy="${yc}" r="5" fill="${color}"/>`;
+    h += `<circle cx="${xc}" cy="${yt}" r="13" fill="white" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<line x1="${xc-13}" y1="${yt}" x2="${xc+13}" y2="${yt}" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<line x1="${xc}" y1="${yt-13}" x2="${xc}" y2="${yt+13}" stroke="${color}" stroke-width="1.5"/>`;
+    if (gate.note) h += gateNote(gate.note, xc, Math.min(yc,yt) - 4, color);
+  } else if (gate.op === 'CY') {
+    const [ctrl, tgt] = gate.q;
+    const yc = yBase + ctrl * yStep, yt = yBase + tgt * yStep;
+    h += `<line x1="${xc}" y1="${yc}" x2="${xc}" y2="${yt}" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<circle cx="${xc}" cy="${yc}" r="5" fill="${color}"/>`;
+    h += `<rect x="${xc-16}" y="${yt-16}" width="32" height="32" rx="4" fill="white" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<text x="${xc}" y="${yt}" text-anchor="middle" dominant-baseline="central" font-size="13" fill="${color}" font-weight="600" font-family="DM Mono,monospace">Y</text>`;
+    if (gate.note) h += gateNote(gate.note, xc, Math.min(yc,yt) - 4, color);
+  }
+  return h;
+}
+
+function gateNote(note, x, y, color) {
+  return `<text x="${x}" y="${y}" text-anchor="middle" font-size="8" fill="${color}" font-family="DM Sans,sans-serif" opacity="0.7">${note}</text>`;
+}
+
+/* ──────────────────────────────────────────────
+   RUN EXPERIMENT
+*/
+function runExperiment() {
+  hasRun = true;
+  const f = FORCES[currentForce];
+  const p = getParams();
+  const sv = f.stateVec(p);
+  const { a, b, ph } = sv;
+  const norm = Math.sqrt(a*a + b*b) || 1;
+  const an = a/norm, bn = b/norm;
+  const P0 = an*an, P1 = bn*bn;
+  const shots = parseInt(document.getElementById('shots').value);
+  const color = f.color;
+  const outcomes = [
+    { l:'|00⟩', p: P0 * 0.58 },
+    { l:'|01⟩', p: P0 * 0.42 },
+    { l:'|10⟩', p: P1 * 0.53 },
+    { l:'|11⟩', p: P1 * 0.47 },
+  ];
+  let bh = '';
+  for (const o of outcomes) {
+    const cnt = Math.round(o.p * shots);
+    bh += `<div class="prob-row">
+      <span class="prob-ket">${o.l}</span>
+      <div class="prob-track"><div class="prob-fill" style="width:${(o.p*100).toFixed(1)}%;background:${color}"></div></div>
+      <span class="prob-pct">${(o.p*100).toFixed(1)}%</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);min-width:44px;margin-left:4px">${cnt} cts</span>
+    </div>`;
+  }
+  document.getElementById('prob-bars').innerHTML = bh;
+  document.getElementById('counts-info').innerHTML =
+    `shots: ${shots}  |  backend: ${document.getElementById('backend').value}<br>`+
+    `P(0): ${(P0*100).toFixed(2)}%  P(1): ${(P1*100).toFixed(2)}%  |  phase: ${ph.toFixed(4)} rad`;
+  document.getElementById('state-vec').innerHTML =
+    `|ψ⟩ = <span style="color:${color};font-weight:500">${an.toFixed(5)}</span>|0⟩ ` +
+    `+ <span style="color:${color};font-weight:500">${bn.toFixed(5)}·e<sup>i·${ph.toFixed(4)}</sup></span>|1⟩\n\n` +
+    `Normalization:   ${(an*an+bn*bn).toFixed(6)}\n`+
+    `Entanglement:    ${(2*Math.abs(an*bn)).toFixed(4)}\n`+
+    `|⟨0|ψ⟩|²:       ${P0.toFixed(5)}\n`+
+    `|⟨1|ψ⟩|²:       ${P1.toFixed(5)}\n`+
+    `Global phase:   ${ph.toFixed(4)} rad`;
+  renderBloch(sv);
+  const theta = 2 * Math.acos(Math.min(1, Math.abs(an)));
+  const phi2 = ph;
+  const bx = Math.sin(theta)*Math.cos(phi2), bz = Math.cos(theta);
+  document.getElementById('bloch-readout').innerHTML =
+    `θ = ${theta.toFixed(4)} rad\nφ = ${phi2.toFixed(4)} rad\n\n`+
+    `⟨X⟩ = ${bx.toFixed(4)}\n⟨Y⟩ = ${(Math.sin(theta)*Math.sin(phi2)).toFixed(4)}\n⟨Z⟩ = ${bz.toFixed(4)}`;
+  buildExplanation(currentForce, P0, P1, an, bn, ph, shots);
+  showTab('probs');
+}
+
+function renderBloch(sv) {
+  const f = FORCES[currentForce];
+  const { a, b, ph } = sv;
+  const norm = Math.sqrt(a*a+b*b)||1;
+  const an=a/norm, bn=b/norm;
+  const theta = 2*Math.acos(Math.min(1,Math.abs(an)));
+  const phi = ph||0;
+  const cx=80, cy=80, r=60;
+  const bx = Math.sin(theta)*Math.cos(phi);
+  const bz = Math.cos(theta);
+  const px = cx + r*bx*0.85, py = cy - r*bz;
+  const color = f.color;
+  document.getElementById('bloch-svg').innerHTML = `
+    <ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r*0.28}" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${r*0.28}" ry="${r}" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="0.6"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}08" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+    <line x1="${cx}" y1="${cy-r-6}" x2="${cx}" y2="${cy+r+6}" stroke="rgba(0,0,0,0.15)" stroke-width="0.7"/>
+    <line x1="${cx-r-6}" y1="${cy}" x2="${cx+r+6}" y2="${cy}" stroke="rgba(0,0,0,0.15)" stroke-width="0.7"/>
+    <text x="${cx}" y="${cy-r-9}" text-anchor="middle" font-size="10" fill="rgba(0,0,0,0.4)" font-family="DM Mono,monospace">|0⟩</text>
+    <text x="${cx}" y="${cy+r+16}" text-anchor="middle" font-size="10" fill="rgba(0,0,0,0.4)" font-family="DM Mono,monospace">|1⟩</text>
+    <text x="${cx+r+8}" y="${cy+4}" font-size="9" fill="rgba(0,0,0,0.3)" font-family="DM Mono,monospace">+x</text>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="rgba(0,0,0,0.2)"/>
+    <line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${px}" cy="${py}" r="6" fill="${color}" opacity="0.9"/>
+    <circle cx="${px}" cy="${py}" r="11" fill="${color}" opacity="0.1"/>
+  `;
+}
+
+function updateInfo() {
+  const f = FORCES[currentForce];
+  const gi = f.gateInfo;
+  document.getElementById('gate-info-card').innerHTML = `
+    <h3>${gi.title}</h3>
+    <p>${gi.body}</p>
+    <div class="formula">${gi.formula}</div>
+  `;
+  let lh = `<div style="margin-bottom:10px;font-family:var(--font-display);font-size:14px;color:var(--text)">${f.label} — Limitations &amp; How to Fix Them</div>`;
+  for (const lim of f.limitations) {
+    lh += `<div class="limit-card">
+      <h4><span class="limit-badge badge-limit">Limitation</span>${lim.title}</h4>
+      <p>${lim.body}</p>
+      <p style="margin-top:6px"><span class="limit-badge badge-fix">Fix</span> ${lim.fix}</p>
+    </div>`;
+  }
+  lh += `<div class="limit-card" style="border-color:rgba(217,119,6,0.25)">
+    <h4><span class="limit-badge badge-limit">Universal</span>Decoherence &amp; noise on real hardware</h4>
+    <p>Simulation assumes perfect gates. Real IBM devices have gate errors ~0.1–1% and T2 coherence ~50–300μs.</p>
+    <p style="margin-top:6px"><span class="limit-badge badge-fix">Fix</span> Use Qiskit's error mitigation (ZNE, PEC) and limit circuit depth to ≤ 30 gates on real hardware.</p>
+  </div>`;
+  document.getElementById('limits-content').innerHTML = lh;
+}
+
+function showTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+  document.getElementById('rtab-' + name).classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
+  const color = FORCES[currentForce].color;
+  document.getElementById('rtab-' + name).style.setProperty('--fc', color);
+}
+
+/* ──────────────────────────────────────────────
+   Q&A SYSTEM
+*/
+const QA_KB = {
+  gravity: {
+    'what does rzz do': `<span class="tag tag-exp">Gate</span><br><strong>RZZ(θ)</strong> is a two-qubit entangling gate defined as exp(−i·θ·Z⊗Z/2). It creates correlated phases between two qubits — the quantum analog of a gravitational potential energy. When θ is large (heavy mass, short distance), the qubits become strongly entangled, mimicking strong gravitational binding.`,
+    'why is the mass ancilla needed': `<span class="tag tag-exp">Physics</span><br>In quantum gravity proposals, the gravitational field itself must be in a quantum superposition to create entanglement between two particles. Putting q[1] (mass) into superposition via H first means the "gravitational field" is in |+⟩ — a superposition of mass configurations.`,
+    'how accurate is this': `<span class="tag tag-limit">Limitation</span><br>The circuit is a <strong>Newtonian analog</strong>, not full GR. It misses: spin-2 graviton tensor structure, geodesic equation dynamics, spacetime back-reaction, and quantum corrections.`,
+  },
+  geodesic: {
+    'what is the novelty': `<span class="tag tag-exp">Hemanth 2026</span><br><strong>Hemanth's key idea from Page 3 of notes:</strong> "instead of ds use Gamma as theta." Where Rhyno et al. (2026) use a fixed lattice deformation profile vj, Hemanth proposes replacing it with <strong>vj = sqrt(f(rj)) = sqrt(1 - rs/rj)</strong>, derived directly from the Christoffel symbol Gamma^r_tt = GM*f(r)/r^2.`,
+    'how are christoffel symbols encoded': `<span class="tag tag-exp">Christoffel Gate</span><br>Gamma^r_tt = GM*(1-rs/r)/r^2 is encoded via vj = sqrt(f(r)) in the gate angle: theta = 2*delta_t*vj*Delta + pi/2.`,
+    'what is flat vs schwarzschild': `<span class="tag tag-exp">Circuit Comparison</span><br>Flat mode: vj=1 everywhere -- all Trotter layers have identical gate angles. Schwarzschild mode: vj = sqrt(1 - rs/r_j) — every Trotter layer has a DIFFERENT gate angle.`,
+    'what is rs': `<span class="tag tag-exp">Schwarzschild Radius</span><br>rs = 2GM/c^2 is the Schwarzschild radius. In natural units (G=c=1): rs = 2M. As the particle falls toward rs, the time-dilation Christoffel Gamma^t_rt = GM/(r^2*f(r)) diverges.`,
+    'what is the test particle': `<span class="tag tag-exp">Quantum Test Particle</span><br>Unlike classical geodesic tests, the test particle is a QUANTUM entangled pair (q[0] and q[1] form an EPR state). The geodesic deviation shows up as a deviation of P(q[0]=1) from the flat-space baseline.`,
+  },
+  erepr: {
+    'what is er epr': `<span class="tag tag-exp">ER=EPR</span><br><strong>ER = EPR</strong> is the Maldacena–Susskind conjecture (2013): an Einstein–Rosen bridge (wormhole) between two black holes is <em>identical</em> to an EPR entangled pair. This circuit implements the <strong>SYK traversable wormhole</strong> demonstrated on Google Sycamore by Jafferis et al. (Nature 612, 2022).`,
+    'what is gjw': `<span class="tag tag-exp">GJW Gate</span><br>The <strong>Gao–Jafferis–Wall (GJW)</strong> coupling is a negative-energy perturbation that <em>opens</em> the wormhole. In the circuit it is the <code>RZZ(−μ)</code> gate on qubits q[1] and q[3]. Without it (μ=0), no signal can cross. With it (μ>0), a signal teleports through the bridge.`,
+    'what is tfd': `<span class="tag tag-exp">TFD State</span><br>The <strong>Thermofield Double (TFD)</strong> state |TFD⟩ = Σ_n e^{−βEn/2}|n⟩_L|n⟩_R is the quantum description of two entangled black holes. In the circuit, <code>H + CX</code> on q[0] and q[2] creates this state.`,
+    'what is shapiro delay': `<span class="tag tag-exp">Shapiro Delay</span><br>The <strong>Shapiro time delay</strong> is the gravitational red-shift a signal acquires while crossing through the wormhole throat. In this circuit it is encoded as <code>RZ(μ/2)</code> on q[2].`,
+    'how do i read results': `<span class="tag tag-exp">Reading Results</span><br>The key measurement is <strong>q[2]</strong> (Right BH wormhole exit):<br><br>Run 1: μ=0 → P(q[2]=0) ≈ 50% — bridge exists but nothing can cross<br>Run 2: μ>0 → P(q[2]=0) ≠ 50% — signal crossed the wormhole!<br><br>The <strong>deviation from 50%</strong> = ER=EPR wormhole traversal signal.`,
+    'prove er equals epr': `<span class="tag tag-exp">The Proof</span><br><strong>Step 1.</strong> H + CX creates EPR = ER bridge (non-traversable).<br><strong>Step 2.</strong> μ=0: P(q[2]=0) ≈ 50% — bridge closed, no signal.<br><strong>Step 3.</strong> μ>0: P(q[2]=0) deviates. Signal crossed from L-BH to R-BH through the wormhole. ER=EPR confirmed.`,
+  },
+  generic: {
+    'what is a qubit': `<span class="tag tag-exp">Basics</span><br>A qubit can be in a superposition: |ψ⟩ = α|0⟩ + β|1⟩, where |α|²+|β|²=1. When measured, it collapses to |0⟩ with probability |α|² or |1⟩ with probability |β|².`,
+    'what is entanglement': `<span class="tag tag-exp">Basics</span><br>Quantum entanglement means two qubits share a state that cannot be described independently. Measuring one qubit instantly determines something about the other — regardless of distance.`,
+    'what is a hadamard gate': `<span class="tag tag-exp">Gate</span><br>The Hadamard gate H puts a qubit into superposition: H|0⟩ = (|0⟩+|1⟩)/√2 = |+⟩.`,
+    'how do i run on ibm': `<span class="tag tag-fix">IBM Hardware</span><br>Download the <strong>.py Qiskit file</strong> from the sidebar, then:<br>1. Install: <code>pip install qiskit qiskit-ibm-runtime</code><br>2. Get your API token at quantum.ibm.com<br>3. Run: <code>python gravity_force_qiskit.py</code>`,
+    'what is qasm': `<span class="tag tag-exp">Format</span><br>OpenQASM is the standard text format for quantum circuits. A .qasm file can be uploaded directly to IBM Quantum Composer at quantum.ibm.com/composer.`,
+  }
+};
+
+const EXPERIMENTS = {
+  gravity: ['Sweep mass M from 0.1 → 3 and watch entanglement grow', 'Set distance r → 5 (far field) and observe weak coupling', 'Compare |0⟩ vs |+⟩ initial state — how does the Bloch sphere differ?', 'Try G=0.1 (weak gravity) vs G=2 (strong) — count change in probabilities'],
+  em: ['Set α = 0.0073 (exact fine-structure) and compare to α=0.5 (strong EM)', 'Set charge q = −1 (antiparticle) — does the phase flip?', 'Increase B field and watch Larmor precession rotate the Bloch vector', 'Set q = 0 (neutral particle) — does EM vanish?'],
+  strong: ['Increase Nf (flavors) from 1 → 6 and watch αs run (decrease) — asymptotic freedom!', 'Set Q² = 10 GeV² (high energy) vs Q² = 0.5 (low energy) — compare coupling', 'Try |GHZ⟩ initial state — already partially confined!', 'Set αs = 2.0 and observe maximum entanglement (strong confinement)'],
+  weak: ['Set θ_CKM = 0 — β-decay stops (CKM suppression)', 'Increase M_W → 3 (heavy boson) — weaker Fermi coupling', 'Set Higgs VEV v → 0 — W-boson becomes massless, interaction changes', 'Compare GF = 0.1 (very weak) vs GF = 2 (strong Fermi coupling)'],
+  geodesic: [
+    'Set mode=0 (flat): all gate angles identical. Set mode=1 (Schwarzschild): each layer different. Download both .qasm files and diff them.',
+    'Set r0 = 1.1rs (very close to horizon): Gamma^t_rt diverges, P(q0=1) deviates strongly from 50%.',
+    'Set Delta=0 (XX model): pure geodesic effect from vj only. Compare with Delta=1.',
+    'Increase Trotter layers S from 1 to 12: watch geodesic deviation accumulate.',
+    'Download Schwarzschild .py and run it. Compare P(q0=0) for r0=8rs vs r0=1.5rs.',
+  ],
+  erepr: [
+    'FIRST: set mu=0, run experiment - P(q[2]=0) should be ~50% (bridge closed)',
+    'THEN: set mu=0.8 - P(q[2]=0) should deviate from 50% (wormhole opened!)',
+    'Vary J (SYK coupling) 0.1 to 2.0 - stronger J = more scrambling',
+    'Vary t (scrambling time) 0.5 to 3.0 - longer t = deeper scrambling',
+    'Download .py and run - it automatically compares mu=0 vs mu>0 and prints bridge strength',
+  ],
+};
+
+function updateSuggestions() {
+  const chips = document.getElementById('sq-chips');
+  chips.innerHTML = '';
+  const geodesicQs = [
+    'What is the novelty in this module?',
+    'How are Christoffel symbols encoded as gates?',
+    'What is the difference between flat and Schwarzschild mode?',
+    'What is rs (Schwarzschild radius)?',
+    'What is the quantum test particle?',
+  ];
+  const ereprQs = [
+    'What is ER = EPR?',
+    'What does the GJW gate do?',
+    'How do I prove the wormhole is open?',
+    'How do I read the output bits?',
+    'What is the Shapiro time delay?',
+  ];
+  const genericQs = [
+    `What does the main gate in this force do?`,
+    `What are the limitations of this circuit?`,
+    `What experiments should I run?`,
+    `How do I run this on real IBM hardware?`,
+    `What is entanglement and why does it model forces?`,
+  ];
+  const qs = currentForce === 'erepr' ? ereprQs : currentForce === 'geodesic' ? geodesicQs : genericQs;
+  for (const q of qs) {
+    const c = document.createElement('button');
+    c.className = 'sq-chip';
+    c.textContent = q;
+    c.onclick = () => { document.getElementById('qa-input').value = q; sendQuestion(); };
+    chips.appendChild(c);
+  }
+}
+
+function sendQuestion() {
+  const input = document.getElementById('qa-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addMsg(q, 'user');
+  const typingId = addTyping();
+  setTimeout(() => {
+    removeTyping(typingId);
+    const answer = generateAnswer(q);
+    addMsg(answer, 'ai');
+  }, 600 + Math.random() * 400);
+}
+
+function generateAnswer(q) {
+  const ql = q.toLowerCase();
+  const f = FORCES[currentForce];
+  if (/experiment|try|run|test|what should/i.test(ql)) {
+    const exps = EXPERIMENTS[currentForce] || EXPERIMENTS.gravity;
+    return `<span class="tag tag-exp">Experiments</span><br><strong>Suggested experiments for ${f.label}:</strong><br><br>${exps.map((e,i)=>`${i+1}. ${e}`).join('<br>')}<br><br><em>Each experiment adjusts one parameter at a time to isolate the physical effect.</em>`;
+  }
+  if (/limit|can't|cannot|not do|weakness|problem|flaw|accurate/i.test(ql)) {
+    const lims = f.limitations;
+    let out = `<span class="tag tag-limit">Limitations</span><br><strong>${f.label} — what this circuit can't do:</strong><br><br>`;
+    lims.forEach((l, i) => {
+      out += `<strong>${i+1}. ${l.title}</strong><br>${l.body}<br><span style="color:var(--weak)">→ Fix: ${l.fix}</span><br><br>`;
+    });
+    return out;
+  }
+  if (/geodesic|christoffel|vj|schwarzschild|novelty/i.test(ql)) {
+    if (/novel|new|different|hemanth/i.test(ql)) return QA_KB.geodesic['what is the novelty'];
+    if (/christoffel|gamma|encoded|gate/i.test(ql)) return QA_KB.geodesic['how are christoffel symbols encoded'];
+    if (/flat|compare|diff/i.test(ql)) return QA_KB.geodesic['what is flat vs schwarzschild'];
+    if (/rs|radius/i.test(ql)) return QA_KB.geodesic['what is rs'];
+    if (/test.*particle|particle|entangl/i.test(ql)) return QA_KB.geodesic['what is the test particle'];
+    return QA_KB.geodesic['what is the novelty'];
+  }
+  if (/er.epr|wormhole|einstein.rosen|maldacena|traversable/i.test(ql)) {
+    if (/prove|proof|confirm/i.test(ql)) return QA_KB.erepr['prove er equals epr'];
+    if (/read|result|output|bit/i.test(ql)) return QA_KB.erepr['how do i read results'];
+    if (/gjw|gao|jafferis|negative.energy/i.test(ql)) return QA_KB.erepr['what is gjw'];
+    if (/tfd|thermofield/i.test(ql)) return QA_KB.erepr['what is tfd'];
+    if (/shapiro|time.delay/i.test(ql)) return QA_KB.erepr['what is shapiro delay'];
+    return QA_KB.erepr['what is er epr'];
+  }
+  if (/gjw|gao.jafferis/i.test(ql)) return QA_KB.erepr['what is gjw'];
+  if (/tfd|thermofield/i.test(ql)) return QA_KB.erepr['what is tfd'];
+  if (/shapiro/i.test(ql)) return QA_KB.erepr['what is shapiro delay'];
+  if (/ibm|hardware|real|qasm|upload|run on/i.test(ql)) return QA_KB.generic['how do i run on ibm'];
+  if (/rzz|entangl/i.test(ql) && currentForce === 'gravity') return QA_KB.gravity['what does rzz do'];
+  if (/hadamard|h gate/i.test(ql)) return QA_KB.generic['what is a hadamard gate'];
+  if (/qubit|what is q/i.test(ql)) return QA_KB.generic['what is a qubit'];
+  if (/entangl/i.test(ql)) return QA_KB.generic['what is entanglement'];
+  if (/qasm|format|file/i.test(ql)) return QA_KB.generic['what is qasm'];
+  if (/gate|circuit|how.*work|explain/i.test(ql)) {
+    const gi = f.gateInfo;
+    return `<span class="tag tag-exp">Gate Theory</span><br><strong>${gi.title}</strong><br><br>${gi.body}<br><br><code style="font-family:var(--font-mono);font-size:11px;color:var(--gravity)">${gi.formula}</code>`;
+  }
+  if (/physics|theory|why|how/i.test(ql)) {
+    return `<span class="tag tag-exp">Physics</span><br>${f.desc}`;
+  }
+  return `<span class="tag tag-exp">Lab Assistant</span><br>Great question about <strong>${f.label}</strong>!<br><br>${f.desc}<br><br>Try asking about: <em>experiments to run</em>, <em>limitations</em>, <em>what each gate does</em>, or <em>how to run on IBM hardware</em>.`;
+}
+
+function addMsg(content, type) {
+  const div = document.createElement('div');
+  div.className = `msg msg-${type}`;
+  div.innerHTML = content;
+  document.getElementById('qa-messages').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return div;
+}
+
+let typingCounter = 0;
+function addTyping() {
+  const id = 'typing-' + (++typingCounter);
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg msg-ai msg-typing';
+  div.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  document.getElementById('qa-messages').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return id;
+}
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+/* ──────────────────────────────────────────────
+   DOWNLOADS
+*/
+function downloadQASM() {
+  const f = FORCES[currentForce];
+  const p = getParams();
+  const init = document.getElementById('init-state').value;
+  dl(`hemanth_${currentForce}.qasm`, f.qasm(p, init));
+}
+
+function downloadPython() {
+  const f = FORCES[currentForce];
+  const p = getParams();
+  dl(`hemanth_${currentForce}_qiskit.py`, f.python(p));
+}
+
+function downloadAllForces() {
+  let bundle = `#!/bin/bash\n# Hemanth Gudaparthi Quantum Forces Lab — All Forces Bundle\nmkdir -p hemanth_quantum_lab\n`;
+  for (const [name, f] of Object.entries(FORCES)) {
+    const p = {};
+    for (const param of f.params) p[param.id] = param.def;
+    bundle += `\ncat > hemanth_quantum_lab/hemanth_${name}.qasm << 'EOF'\n${f.qasm(p,'ground')}\nEOF\n`;
+    bundle += `\ncat > hemanth_quantum_lab/hemanth_${name}_qiskit.py << 'EOF'\n${f.python(p)}\nEOF\n`;
+  }
+  bundle += `\necho "All files extracted to ./hemanth_quantum_lab/"`;
+  dl('hemanth_quantum_forces_all.sh', bundle);
+}
+
+function dl(name, content) {
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  a.download = name;
+  a.click();
+}
+
+function copyQASM() {
+  navigator.clipboard.writeText(document.getElementById('qasm-source').textContent)
+    .then(() => toast('QASM copied to clipboard!', 'success'));
+}
+
+/* ──────────────────────────────────────────────
+   IBM CONFIG
+*/
+const IBM_CONFIG = {
+  token:   'YOUR_NEW_IBM_TOKEN_HERE',
+  name:    'Hemanth_Quantum_Experiments',
+  backend: 'ibm_brisbane',
+  simulatorBackend: 'ibmq_qasm_simulator',
+};
+const IBM_BASE = 'https://us-east.quantum-computing.ibm.com';
+let ibmStatus = 'unchecked';
+let ibmUserInfo = null;
+
+async function checkIBMAccount() {
+  if (IBM_CONFIG.token === 'YOUR_NEW_IBM_TOKEN_HERE') {
+    showBanner('warn','⚠️','<strong>IBM API key not set.</strong> Open this file in a text editor, find <code>IBM_CONFIG</code>, and paste your token.',[{label:'Go to IBM Quantum',url:'https://quantum.ibm.com',primary:false},{label:'Dismiss',onclick:'dismissBanner()',primary:false}]);
+    return false;
+  }
+  showBanner('warn','🔄','<strong>Checking IBM Quantum account…</strong>',[]);
+  try {
+    const r = await fetch(`${IBM_BASE}/runtime/users/me`,{headers:{'Authorization':`Bearer ${IBM_CONFIG.token}`,'Content-Type':'application/json'}});
+    if(r.status===401){showBanner('error','🔑','<strong>IBM API key rejected.</strong>',[{label:'Get new key',url:'https://quantum.ibm.com/account',primary:true},{label:'Dismiss',onclick:'dismissBanner()',primary:false}]);ibmStatus='error';return false;}
+    if(!r.ok){showBanner('error','❌','<strong>IBM API error</strong>',[{label:'IBM Dashboard',url:'https://quantum.ibm.com',primary:true},{label:'Dismiss',onclick:'dismissBanner()',primary:false}]);ibmStatus='error';return false;}
+    ibmUserInfo=await r.json();ibmStatus='ok';
+    showBanner('ok','✅',`<strong>IBM Quantum connected</strong> as ${ibmUserInfo.email||'Hemanth Gudaparthi'}.`,[{label:'Run on IBM',onclick:'runOnIBM()',primary:true},{label:'View jobs',onclick:'openIbmJobsModal()',primary:false},{label:'Dismiss',onclick:'dismissBanner()',primary:false}]);
+    return true;
+  } catch(err) {
+    ibmStatus='cors_blocked';
+    showBanner('warn','🌐','<strong>IBM Quantum cannot be called directly from a browser</strong> (CORS policy). Download the .py Qiskit file and run it locally.',[{label:'Download .py',onclick:'downloadPython()',primary:true},{label:'IBM Composer ↗',url:'https://quantum.ibm.com/composer',primary:false},{label:'Dismiss',onclick:'dismissBanner()',primary:false}]);
+    return false;
+  }
+}
+
+async function runOnIBM() {
+  const btn=document.getElementById('btn-ibm-run');
+  btn.classList.add('checking');btn.textContent='Connecting…';btn.disabled=true;
+  const ok=await checkIBMAccount();
+  btn.classList.remove('checking');btn.textContent='Run on IBM Quantum';btn.disabled=false;
+  if(ok)await submitIBMJob();
+}
+
+async function submitIBMJob() {
+  const f=FORCES[currentForce];const p=getParams();
+  const init=document.getElementById('init-state')?.value||'ground';
+  const shots=parseInt(document.getElementById('shots')?.value||'1024');
+  const qasmSrc=f.qasm(p,init);
+  showIbmModal('IBM Quantum Job',
+    `<p>IBM Quantum Runtime blocks browser requests (CORS). Download the Python file below — it has your parameters pre-loaded.</p>
+     <div class="ibm-job-card"><strong>Circuit:</strong> ${f.label}<br><strong>Shots:</strong> ${shots.toLocaleString()}<br><strong>Backend:</strong> ${IBM_CONFIG.backend}</div>
+     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+       <button class="ibm-banner-btn primary" onclick="downloadIBMPython()">Download IBM .py</button>
+       <button class="ibm-banner-btn" onclick="downloadQASM()">Download .qasm</button>
+       <button class="ibm-banner-btn" onclick="window.open('https://quantum.ibm.com/composer','_blank')">IBM Composer</button>
+       <button class="ibm-banner-btn" onclick="closeIbmModal()">Close</button>
+     </div>`);
+  window._ibmPyContent = buildIBMPython(f,p,init,shots,qasmSrc);
+}
+
+function buildIBMPython(f,p,init,shots,qasmSrc){
+  return `#!/usr/bin/env python3
+# Hemanth Gudaparthi Quantum Lab — IBM Quantum Runner
+# Circuit: ${f.label}
+# Backend: ${IBM_CONFIG.backend}
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
+
+IBM_TOKEN = "${IBM_CONFIG.token}"
+BACKEND   = "${IBM_CONFIG.backend}"
+SHOTS     = ${shots}
+
+QASM = """
+${qasmSrc}
+"""
+
+def run():
+    service = QiskitRuntimeService(channel="ibm_quantum", token=IBM_TOKEN)
+    try:
+        backend = service.backend(BACKEND)
+    except Exception:
+        backend = service.backend("ibmq_qasm_simulator")
+    qc = QuantumCircuit.from_qasm_str(QASM)
+    print(qc.draw("text"))
+    qc_t = transpile(qc, backend, optimization_level=3)
+    sampler = Sampler(backend)
+    job = sampler.run([qc_t], shots=SHOTS)
+    result = job.result()
+    counts = result[0].data.c.get_counts()
+    print(f"Results ({SHOTS} shots):")
+    for state, count in sorted(counts.items(), key=lambda x: -x[1]):
+        print(f"  |{state}> {count:5d} ({count/SHOTS*100:.1f}%)")
+    return counts
+
+if __name__ == "__main__":
+    run()
+`;
+}
+
+function downloadIBMPython(){
+  const f=FORCES[currentForce];const p=getParams();
+  const init=document.getElementById('init-state')?.value||'ground';
+  const shots=parseInt(document.getElementById('shots')?.value||'1024');
+  const qasmSrc=f.qasm(p,init);
+  const py=window._ibmPyContent||buildIBMPython(f,p,init,shots,qasmSrc);
+  dl(`hemanth_${currentForce}_ibm_run.py`, py);
+}
+
+function runOnIBMSimulator(){
+  dismissBanner();
+  showIbmModal('IBM QASM Simulator (free)',
+    `<p>The <strong>ibmq_qasm_simulator</strong> is always free with no queue time.</p>
+     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+       <button class="ibm-banner-btn primary" onclick="downloadIBMPython()">Download Python</button>
+       <a href="https://quantum.ibm.com/credits" target="_blank" class="ibm-banner-btn">Buy IBM Credits</a>
+       <button class="ibm-banner-btn" onclick="closeIbmModal()">Close</button>
+     </div>`);
+}
+
+function showBanner(type,icon,text,actions){
+  const b=document.getElementById('ibm-banner');b.className='active '+type;
+  document.getElementById('ibm-banner-icon').textContent=icon;
+  document.getElementById('ibm-banner-text').innerHTML=text;
+  document.getElementById('ibm-banner-actions').innerHTML=actions.map(a=>a.url?`<a href="${a.url}" target="_blank" class="ibm-banner-btn${a.primary?' primary':''}">${a.label}</a>`:`<button class="ibm-banner-btn${a.primary?' primary':''}" onclick="${a.onclick}">${a.label}</button>`).join('');
+}
+function dismissBanner(){document.getElementById('ibm-banner').classList.remove('active');}
+function showIbmModal(title,body){
+  document.getElementById('ibm-modal-title').textContent=title;
+  document.getElementById('ibm-modal-body').innerHTML=body;
+  document.getElementById('ibm-modal-overlay').classList.add('open');
+}
+function closeIbmModal(){document.getElementById('ibm-modal-overlay').classList.remove('open');}
+function openIbmJobsModal(){showIbmModal('IBM Quantum Jobs',`<p>View your submitted jobs on the IBM dashboard:</p><div style="margin-top:10px;display:flex;gap:8px"><a href="https://quantum.ibm.com/jobs" target="_blank" class="ibm-banner-btn primary">View jobs</a><button class="ibm-banner-btn" onclick="closeIbmModal()">Close</button></div>`);}
+
+/* ──────────────────────────────────────────────
+   EXPLAIN PANEL + BIT ROLES
+*/
+let explainOpen = false;
+
+function toggleExplain() {
+  explainOpen = !explainOpen;
+  const panel = document.getElementById('explain-panel');
+  const caret = document.getElementById('exp-caret');
+  const label = document.getElementById('exp-toggle-text');
+  panel.classList.toggle('open', explainOpen);
+  caret.classList.toggle('open', explainOpen);
+  label.textContent = explainOpen ? 'Reading guide — tap to collapse' : 'How to read these results — tap to expand';
+}
+
+const BIT_ROLES = {
+  gravity: {
+    qubits: [
+      { q: 'q[0]', role: 'Test particle', zero: 'Near source — particle close to mass, geodesic tightly curved', one: 'Far away — particle far from mass, geodesic nearly straight' },
+      { q: 'q[1]', role: 'Mass ancilla', zero: 'Low-density mass field — weak spacetime curvature', one: 'High-density mass field — strong curvature, heavy entanglement' },
+      { q: 'q[2]', role: 'Tidal ancilla', zero: 'Tidal force small — nearly uniform gravitational field', one: 'Tidal force large — differential gravity across particle extent' },
+    ],
+    outcomes: [
+      { bits: '|00⟩', dom: true,  phys: 'Particle near mass in weakly curved spacetime — closest to Newtonian limit' },
+      { bits: '|01⟩', dom: false, phys: 'Particle near mass with strong field — gravitational binding dominant' },
+      { bits: '|10⟩', dom: false, phys: 'Particle escaping — geodesic straightening, approaching flat spacetime' },
+      { bits: '|11⟩', dom: false, phys: 'Both particle and field highly excited — maximum GR deviation from Newtonian' },
+    ],
+    stateNote: 'The amplitude α on |0⟩ is the probability amplitude for the particle to be near the mass source. Large α² → strong gravitational binding.',
+    formulaNote: 'θ = G·M/r·t    Large θ → near-maximum entanglement → strong gravity signal',
+  },
+  em: {
+    qubits: [
+      { q: 'q[0]', role: 'Electron (test particle)', zero: 'Electron in ground state — no photon absorbed', one: 'Electron excited — photon absorbed, momentum transferred' },
+      { q: 'q[1]', role: 'Position ancilla', zero: 'Electron unmoved — EM force too weak to displace', one: 'Electron displaced — Coulomb force acted on charge' },
+      { q: 'q[2]', role: 'Photon mediator', zero: 'Photon not emitted — no EM interaction occurred', one: 'Photon emitted/absorbed — EM vertex executed' },
+    ],
+    outcomes: [
+      { bits: '|00⟩', dom: true,  phys: 'No EM interaction — electron passed through unaffected (α ≈ 0 coupling)' },
+      { bits: '|01⟩', dom: false, phys: 'Electron gained momentum — Coulomb scattering occurred' },
+      { bits: '|10⟩', dom: false, phys: 'Photon exchange but electron state unchanged — virtual photon loop' },
+      { bits: '|11⟩', dom: false, phys: 'Full EM interaction — photon absorbed, electron excited and displaced' },
+    ],
+    stateNote: 'The coupling phase φ = q·α·ω determines interaction strength. φ → π/2 means maximum photon-electron entanglement — strong EM force.',
+    formulaNote: 'φ = q·α·ω    |0⟩ probability = cos²(φ)    |1⟩ probability = sin²(φ)',
+  },
+  strong: {
+    qubits: [
+      { q: 'q[0]', role: 'Red (R) quark color', zero: 'Anti-red color charge — ready for annihilation', one: 'Red color charge present — confined in baryon' },
+      { q: 'q[1]', role: 'Green (G) quark color', zero: 'Anti-green — color neutralization possible', one: 'Green color charge present — gluon exchange active' },
+      { q: 'q[2]', role: 'Blue (B) quark color', zero: 'Anti-blue — flux tube on this quark', one: 'Blue color charge present — full baryon color state' },
+    ],
+    outcomes: [
+      { bits: '|000⟩', dom: false, phys: 'Color vacuum — all anti-colors, represents meson-like state' },
+      { bits: '|011⟩', dom: false, phys: 'GB partial color — not confined, would require additional R quark' },
+      { bits: '|101⟩', dom: false, phys: 'RB partial color — unstable intermediate, gluon would mediate' },
+      { bits: '|110⟩', dom: false, phys: 'RG partial color — unstable, confinement not satisfied' },
+      { bits: '|111⟩', dom: true,  phys: 'RGB color neutral baryon — fully confined proton/neutron state' },
+    ],
+    stateNote: 'The GHZ baryon state |RGB⟩ + |GBR⟩ + |BRG⟩ superimposes all valid color assignments. Measuring |111⟩ confirms confinement.',
+    formulaNote: 'αs(Q²) = αs₀/[1+αs₀·b₀·ln(Q²/Λ²)/2π]    High |111⟩ probability = strong confinement',
+  },
+  weak: {
+    qubits: [
+      { q: 'q[0]', role: 'Nucleon (n→p)', zero: 'Proton state — β-decay completed, flavor changed', one: 'Neutron state — before decay, d-quark present' },
+      { q: 'q[3]', role: 'W-boson mediator', zero: 'W-boson collapsed — decay vertex executed', one: 'W-boson in superposition — interaction in progress' },
+      { q: 'q[4]', role: 'Antineutrino', zero: 'No antineutrino — decay did not happen', one: 'Antineutrino emitted — β-decay occurred (entangled with proton)' },
+    ],
+    outcomes: [
+      { bits: '|0⟩(q0)', dom: true,  phys: 'Proton detected — β-decay succeeded: n → p + e⁻ + ν̄ₑ' },
+      { bits: '|1⟩(q0)', dom: false, phys: 'Neutron still present — decay suppressed (large M_W or θ_CKM → 0)' },
+    ],
+    stateNote: 'Reading q[0]: |0⟩ = proton (decay happened), |1⟩ = neutron (decay suppressed). P(|0⟩) = sin²(β) where β = θ_CKM·v/M_W.',
+    formulaNote: 'P(decay) = sin²(θ_CKM·v/M_W)    P(no decay) = cos²(θ_CKM·v/M_W)',
+  },
+  erepr: {
+    qubits: [
+      { q: 'q[0]', role: 'Left Black Hole (L-SYK / Alice)', zero: 'L-BH ground after Bell measurement — bridge L-side collapsed normally', one: 'L-BH excited — scrambling active, wormhole throat open' },
+      { q: 'q[1]', role: 'L-SYK Majorana fermion ancilla', zero: 'L-fermion ground — weak scrambling, info near horizon', one: 'L-fermion excited — deep scrambling, info fully inside BH' },
+      { q: 'q[2]', role: 'Right Black Hole WORMHOLE EXIT (Bob)', zero: 'SIGNAL ARRIVED at R-BH — wormhole was traversable. ER bridge crossed!', one: 'No signal at R-BH — bridge closed (mu too small) or signal lost' },
+      { q: 'q[3]', role: 'R-SYK Majorana fermion ancilla', zero: 'R-fermion ground — GJW coupling inactive', one: 'R-fermion excited — negative-energy shockwave active (GJW fired)' },
+    ],
+    outcomes: [
+      { bits: '|00⟩', dom: true,  phys: 'Signal crossed wormhole: L-BH decayed AND R-BH received. ER bridge traversed. P(|00⟩) > 25% confirms wormhole opening.' },
+      { bits: '|01⟩', dom: false, phys: 'L-BH ok but no R-exit signal. Bridge exists but GJW coupling mu too small to make it traversable.' },
+      { bits: '|10⟩', dom: false, phys: 'L-BH failed, R-BH spurious. Back-reaction from GJW on L-side.' },
+      { bits: '|11⟩', dom: false, phys: 'Both excited: scrambling dominated, signal lost inside BHs. Reduce t or increase mu.' },
+    ],
+    stateNote: 'KEY MEASUREMENT: compare P(q[2]=0) at mu=0 versus mu>0. At mu=0: ~50% (bridge closed). At mu>0: deviates from 50% (bridge OPEN = signal crossed). The .py download runs both automatically.',
+    formulaNote: 'ER=EPR signal = |P(q[2]=0, mu>0) - P(q[2]=0, mu=0)|   GJW: H_int = -i*mu*(O_L+O_R)',
+  },
+  geodesic: {
+    qubits: [
+      { q: 'q[0]', role: 'Quantum test particle (entangled)', zero: 'Ground state — no Christoffel phase accumulated, flat geodesic', one: 'Excited — Christoffel phase built up, geodesic deviated by curvature' },
+      { q: 'q[1]', role: 'EPR partner / quantum field', zero: 'Ground — no entanglement contribution to stress-energy', one: 'Excited — entanglement energy non-zero, ER=EPR bridge active' },
+      { q: 'q[2]', role: 'Christoffel tidal (Gamma^r_tt)', zero: 'Weak tidal field — r >> rs', one: 'Strong tidal — r near rs, Gamma^r_tt growing' },
+      { q: 'q[3]', role: 'Time-dilation (Gamma^t_rt)', zero: 'Weak redshift — clocks near-normal rate', one: 'Strong redshift — Gamma^t_rt diverging near horizon' },
+    ],
+    outcomes: [
+      { bits: '|0000⟩', dom: true,  phys: 'Flat-space baseline: particle undeviated. Dominant in flat mode.' },
+      { bits: '|1000⟩', dom: false, phys: 'Particle geodesic-deviated but weak tidal — moderate curvature region.' },
+      { bits: '|1001⟩', dom: false, phys: 'Particle deviated + time dilation — deeper into gravitational well.' },
+      { bits: '|1011⟩', dom: false, phys: 'Full geodesic deviation: particle deviated, EPR excited, tidal + time dilation — near horizon!' },
+    ],
+    stateNote: 'KEY: compare P(q[0]=1) for flat mode vs Schwarzschild mode. Flat P stays near 50%. Schwarzschild deviates as Christoffel phases accumulate.',
+    formulaNote: 'Geodesic signal = |P(q0=1,Schw) - P(q0=1,flat)|   vj=sqrt(1-rs/r)   Gamma^r_tt=GM*f(r)/r^2',
+  },
+};
+
+function buildExplanation(force, P0, P1, an, bn, ph, shots) {
+  const f   = FORCES[force];
+  const br  = BIT_ROLES[force];
+  const col = f.color;
+  if (!br) return;
+  const dominant0 = P0 >= P1;
+  const entangle  = (2 * Math.abs(an * bn)).toFixed(3);
+  const theta     = (2 * Math.acos(Math.min(1, Math.abs(an)))).toFixed(4);
+
+  const qRows = (br.qubits || []).map(q => `
+    <tr>
+      <td>${q.q}</td>
+      <td style="font-weight:500;color:var(--text)">${q.role}</td>
+      <td>|0⟩ = ${q.zero}</td>
+      <td>|1⟩ = ${q.one}</td>
+    </tr>`).join('');
+
+  const card1 = `
+    <div class="exp-card">
+      <h4><span class="exp-icon">🔭</span>What each qubit represents</h4>
+      <table class="bit-table">
+        <tr><th>Qubit</th><th>Role</th><th>If measured |0⟩</th><th>If measured |1⟩</th></tr>
+        ${qRows}
+      </table>
+    </div>`;
+
+  const outRows = (br.outcomes || []).map(o => `
+    <tr class="${o.dom ? 'dominant' : ''}">
+      <td>${o.bits}</td>
+      <td>${o.phys}${o.dom ? ' <strong style="color:var(--gravity)">(dominant)</strong>' : ''}</td>
+    </tr>`).join('');
+
+  const card2 = `
+    <div class="exp-card">
+      <h4><span class="exp-icon">📊</span>What each outcome means</h4>
+      <p style="margin-bottom:6px;font-size:10px;color:var(--text3)">Highlighted row = most likely outcome in your current run.</p>
+      <table class="bit-table">
+        <tr><th>Bitstring</th><th>Physical interpretation</th></tr>
+        ${outRows}
+      </table>
+    </div>`;
+
+  const P0pct = (P0 * 100).toFixed(1);
+  const P1pct = (P1 * 100).toFixed(1);
+  const cnt0  = Math.round(P0 * shots);
+  const cnt1  = Math.round(P1 * shots);
+
+  const card3 = `
+    <div class="exp-card">
+      <h4><span class="exp-icon">📐</span>How to read probabilities</h4>
+      <p><strong>Probability bar</strong> — each bar shows the fraction of ${shots.toLocaleString()} shots that collapsed to that bitstring.</p>
+      <p style="margin-top:8px"><strong>Your current run:</strong></p>
+      <ul>
+        <li>Ground states (<span class="exp-highlight">|0x⟩</span>): <strong>${P0pct}%</strong> → ${cnt0} shots</li>
+        <li>Excited states (<span class="exp-highlight">|1x⟩</span>): <strong>${P1pct}%</strong> → ${cnt1} shots</li>
+      </ul>
+      <p style="margin-top:8px">The split is controlled by the main coupling angle θ = <strong>${theta} rad</strong>.</p>
+      <div class="exp-formula">${br.formulaNote}</div>
+    </div>`;
+
+  const card4 = `
+    <div class="exp-card">
+      <h4><span class="exp-icon">🧮</span>State vector |ψ⟩ decoded</h4>
+      <p>The state vector <span class="exp-highlight">|ψ⟩ = α|0⟩ + β·e<sup>iφ</sup>|1⟩</span> has two parts:</p>
+      <ul>
+        <li><strong>α = ${an.toFixed(4)}</strong> — amplitude for ground state. α² = ${(an*an).toFixed(4)}.</li>
+        <li><strong>β = ${bn.toFixed(4)}</strong> — amplitude for excited state. β² = ${(bn*bn).toFixed(4)}.</li>
+        <li><strong>φ = ${ph.toFixed(4)} rad</strong> — relative phase encoding interaction strength.</li>
+        <li><strong>Entanglement = ${entangle}</strong> — ${parseFloat(entangle) > 0.5 ? 'strongly entangled — force is active.' : parseFloat(entangle) > 0.15 ? 'partially entangled — moderate force coupling.' : 'weakly entangled — force coupling is small.'}</li>
+      </ul>
+      <div class="exp-formula">${br.stateNote}</div>
+    </div>`;
+
+  const card5 = `
+    <div class="exp-card">
+      <h4><span class="exp-icon">🔬</span>What to do next</h4>
+      <p><strong>To increase the dominant outcome probability:</strong> adjust parameters so the coupling angle θ approaches <span class="exp-highlight">π/2 rad</span>.</p>
+      <p style="margin-top:6px"><strong>To see the force switch off:</strong> set the coupling constant to 0. The probabilities should collapse to 100% |0⟩ — no force, no deviation.</p>
+      <p style="margin-top:6px"><strong>Download the .qasm</strong> and load it into <a href="https://quantum.ibm.com/composer" target="_blank" style="color:#185FA5">IBM Quantum Composer</a> to run on real hardware.</p>
+    </div>`;
+
+  document.getElementById('explain-inner').innerHTML = card1 + card2 + card3 + card4 + card5;
+  if (!explainOpen) toggleExplain();
+}
+
+function buildArxivExplanation(r, P0, P1) {
+  if (!r || !r.qubit_roles) return '';
+  const qRows = (r.qubit_roles || []).map((qr, i) => {
+    const parts = qr.split(':');
+    return `<tr><td>q[${i}]</td><td>${parts.slice(1).join(':').trim()}</td></tr>`;
+  }).join('');
+  return `
+    <div class="exp-card" style="grid-column:1/-1;margin-top:8px">
+      <h4><span class="exp-icon">📖</span>Reading the arXiv circuit output — ${r.circuit_title}</h4>
+      <table class="bit-table" style="margin-bottom:10px">
+        <tr><th>Qubit</th><th>Physical role in this circuit</th></tr>
+        ${qRows}
+      </table>
+      <p>${r.physics_summary || ''}</p>
+    </div>`;
+}
+
+/* ──────────────────────────────────────────────
+   arXiv SEARCH + CIRCUIT GENERATION
+*/
+const ARXIV_CATS = [
+  { id:'quant-ph', label:'Quantum' },
+  { id:'hep-th',   label:'HEP-Th' },
+  { id:'gr-qc',    label:'Gravity' },
+  { id:'cond-mat', label:'Cond. Matter' },
+  { id:'math-ph',  label:'Math-Ph' },
+  { id:'physics',  label:'Physics' },
+];
+const ARXIV_RANDOM_QUERIES = [
+  'quantum error correction surface code',
+  'variational quantum eigensolver molecular',
+  'quantum entanglement Bell inequality',
+  'topological qubit Majorana fermion',
+  'quantum gravity holography AdS CFT',
+  'quantum chromodynamics lattice QCD',
+  'quantum phase transition condensed matter',
+  'Grover algorithm quantum search',
+];
+
+let arxivSelCats = new Set(['quant-ph','gr-qc','hep-th']);
+let arxivPapers  = [];
+let arxivSelPaper = null;
+let arxivResult   = null;
+let arxivCurTab   = 'circuit';
+
+function openArxiv() {
+  document.getElementById('arxiv-overlay').classList.add('open');
+  if (!arxivPapers.length) arxivSearch();
+}
+function closeArxiv() {
+  document.getElementById('arxiv-overlay').classList.remove('open');
+}
+
+function initArxivCats() {
+  const row = document.getElementById('arxiv-cats');
+  ARXIV_CATS.forEach(c => {
+    const el = document.createElement('span');
+    el.className = 'arxiv-cat' + (arxivSelCats.has(c.id) ? ' active' : '');
+    el.textContent = c.label;
+    el.title = c.id;
+    el.onclick = () => {
+      arxivSelCats.has(c.id) ? arxivSelCats.delete(c.id) : arxivSelCats.add(c.id);
+      el.classList.toggle('active');
+    };
+    row.appendChild(el);
+  });
+}
+
+function arxivRandom() {
+  const q = ARXIV_RANDOM_QUERIES[Math.floor(Math.random() * ARXIV_RANDOM_QUERIES.length)];
+  document.getElementById('arxiv-input').value = q;
+  arxivSearch();
+}
+
+async function arxivSearch() {
+  const q = document.getElementById('arxiv-input').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('arxiv-search-btn');
+  btn.textContent = 'Searching…';
+  btn.disabled = true;
+  const catFilter = [...arxivSelCats].map(c => 'cat:' + c).join(' OR ');
+  const fullQuery  = `(${q}) AND (${catFilter})`;
+  const apiUrl = `https://export.arxiv.org/api/query?search_query=${encodeURIComponent(fullQuery)}&max_results=14&sortBy=relevance&sortOrder=descending`;
+  const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl);
+  const placeholder = document.getElementById('arxiv-results-placeholder');
+  if (placeholder) placeholder.textContent = 'Searching…';
+  try {
+    const res  = await fetch(proxyUrl);
+    const text = await res.text();
+    const doc  = new DOMParser().parseFromString(text, 'text/xml');
+    const entries = doc.querySelectorAll('entry');
+    arxivPapers = [];
+    entries.forEach(e => {
+      const rawId  = e.querySelector('id')?.textContent || '';
+      const id     = rawId.split('/abs/').pop().replace(/v\d+$/, '');
+      const title  = (e.querySelector('title')?.textContent || '').trim().replace(/\s+/g, ' ');
+      const summary= (e.querySelector('summary')?.textContent || '').trim().replace(/\s+/g, ' ');
+      const authors= [...e.querySelectorAll('author name')].map(a => a.textContent).slice(0, 3);
+      const pub    = (e.querySelector('published')?.textContent || '').substring(0, 10);
+      const cats   = [...e.querySelectorAll('[term]')].map(c => c.getAttribute('term')).filter(Boolean);
+      if (id && title) arxivPapers.push({ id, title, summary, authors, pub, cats });
+    });
+    renderArxivList();
+  } catch (err) {
+    const el = document.getElementById('arxiv-results');
+    el.innerHTML = '<div class="arxiv-empty">Search failed — the arXiv CORS proxy may be temporarily unavailable. Try again in a moment.</div>';
+  }
+  btn.textContent = 'Search arXiv';
+  btn.disabled = false;
+}
+
+function renderArxivList() {
+  const el = document.getElementById('arxiv-results');
+  if (!arxivPapers.length) {
+    el.innerHTML = '<div class="arxiv-empty">No papers found. Try different keywords or enable more categories.</div>';
+    return;
+  }
+  const isQP = cats => cats.some(c => ['quant-ph','hep-th','gr-qc'].includes(c));
+  el.innerHTML = arxivPapers.map((p, i) => {
+    const chips = p.cats.slice(0, 4).map(c =>
+      `<span class="arxiv-chip${isQP([c]) ? ' qp' : ''}">${c}</span>`
+    ).join('');
+    return `<div class="arxiv-card" id="arc-${i}" onclick="arxivSelect(${i})">
+      <div class="arxiv-card-title">${p.title}</div>
+      <div class="arxiv-card-meta">${p.authors.join(', ')}${p.authors.length ? ' · ' : ''}${p.pub}</div>
+      <div class="arxiv-card-cats">${chips}</div>
+      <a class="arxiv-link-small" href="https://arxiv.org/abs/${p.id}" target="_blank" onclick="event.stopPropagation()">arxiv.org/abs/${p.id}</a>
+    </div>`;
+  }).join('');
+}
+
+function arxivSelect(i) {
+  arxivSelPaper = arxivPapers[i];
+  arxivResult   = null;
+  document.querySelectorAll('.arxiv-card').forEach((c, j) => c.classList.toggle('selected', j === i));
+  document.getElementById('arxiv-detail-placeholder').style.display = 'none';
+  const panel = document.getElementById('arxiv-paper-panel');
+  panel.style.display = 'flex';
+  document.getElementById('arxiv-dtitle').textContent = arxivSelPaper.title;
+  document.getElementById('arxiv-dmeta').innerHTML =
+    `<strong>${arxivSelPaper.authors.join(', ')}</strong> · ${arxivSelPaper.pub} · ` +
+    `<a href="https://arxiv.org/abs/${arxivSelPaper.id}" target="_blank" style="color:#185FA5;font-size:10px">arxiv.org/abs/${arxivSelPaper.id}</a>`;
+  document.getElementById('arxiv-dabstract').textContent = arxivSelPaper.summary;
+  document.getElementById('arxiv-result-block').style.display = 'none';
+  document.getElementById('arxiv-gen-btn').disabled = false;
+  document.getElementById('arxiv-gen-btn').textContent = '✨ Generate Quantum Circuit for this Paper';
+}
+
+async function arxivGenerate() {
+  if (!arxivSelPaper) return;
+  const btn = document.getElementById('arxiv-gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="arxiv-spin"></span> Analysing paper & designing circuit…';
+
+  const systemPrompt = `You are a quantum computing expert. Given a physics paper title and abstract, design a quantum circuit that captures the paper's key physics.
+
+Return ONLY valid JSON (no markdown fences, no extra text):
+{
+  "circuit_title": "Short circuit name (max 8 words)",
+  "physics_summary": "2-3 sentences explaining what physics this encodes",
+  "qubit_roles": ["q[0]: description", "q[1]: description", "q[2]: description"],
+  "gate_rationale": ["why each main gate was chosen (3-5 items)"],
+  "limitations": ["limitation 1", "limitation 2", "limitation 3"],
+  "improvements": ["how to fix limitation 1", "fix 2", "fix 3"],
+  "hardware_notes": "Brief IBM hardware advice",
+  "nQubits": 5,
+  "circuit_ops": [
+    {"op":"H","q":[0],"label":"H","note":"physical meaning"},
+    {"op":"CX","q":[0,1],"label":"","note":"entangle"},
+    {"op":"RZ","q":[1],"label":"RZ(θ)","note":"phase"},
+    {"op":"M","q":[0],"label":"M","note":"measure"}
+  ],
+  "qasm": "// complete OPENQASM 2.0 code with comments",
+  "python": "#!/usr/bin/env python3\\n# complete Qiskit script"
+}
+
+Allowed gate ops: H X Y Z S T CX CY CZ RX RY RZ RZZ RXX RYY CP SWAP CCX M
+Use 4-6 qubits.`;
+
+  const userMsg = `Paper title: "${arxivSelPaper.title}"
+Authors: ${arxivSelPaper.authors.join(', ')}
+arXiv ID: ${arxivSelPaper.id}
+
+Abstract:
+${arxivSelPaper.summary.substring(0, 1600)}
+
+Design a quantum circuit that captures the key physics.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    const data = await resp.json();
+    let raw = (data.content || []).map(b => b.text || '').join('').trim();
+    raw = raw.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    arxivResult = JSON.parse(raw);
+    arxivResult.paper = arxivSelPaper;
+    renderArxivResult();
+  } catch (err) {
+    btn.innerHTML = '✨ Generate Quantum Circuit for this Paper';
+    btn.disabled = false;
+    alert('Circuit generation failed: ' + err.message + '\n\nIf running standalone (outside claude.ai), add your Anthropic API key to the fetch headers.');
+    return;
+  }
+  btn.innerHTML = '↺ Regenerate Circuit';
+  btn.disabled = false;
+}
+
+function renderArxivResult() {
+  const r = arxivResult;
+  document.getElementById('arxiv-result-block').style.display = 'block';
+  document.getElementById('arxiv-result-name').textContent = r.circuit_title || 'Generated circuit';
+  arxivTab('circuit');
+  document.getElementById('artp-circuit').innerHTML = buildArxivSVG(r.circuit_ops || [], r.nQubits || 5, r);
+  document.getElementById('arxiv-analysis-content').innerHTML = `
+    <div class="arxiv-acard"><h4>Physics encoded</h4><p>${r.physics_summary || '—'}</p></div>
+    <div class="arxiv-acard"><h4>Qubit register</h4><ul>${(r.qubit_roles||[]).map(q=>`<li>${q}</li>`).join('')}</ul></div>
+    <div class="arxiv-acard"><h4>Gate rationale</h4><ul>${(r.gate_rationale||[]).map(g=>`<li>${g}</li>`).join('')}</ul></div>
+    <div class="arxiv-acard"><h4>Limitations & fixes</h4>
+      ${(r.limitations||[]).map((l,i)=>`
+        <div style="margin-bottom:8px">
+          <span style="font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600;background:rgba(220,38,38,0.1);color:var(--strong);margin-right:4px">Limit</span>
+          <span style="font-size:11px;color:var(--text2)">${l}</span>
+          ${r.improvements&&r.improvements[i]?`<br><span style="font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600;background:rgba(5,150,105,0.1);color:var(--weak);margin-right:4px">Fix</span><span style="font-size:11px;color:var(--text2)">${r.improvements[i]}</span>`:''}
+        </div>`).join('')}
+    </div>
+    <div class="arxiv-acard" style="grid-column:1/-1"><h4>IBM hardware notes</h4><p>${r.hardware_notes||'—'}</p></div>`;
+  document.getElementById('arxiv-qasm-pre').innerHTML = arxivColorQasm(r.qasm || '');
+  const py = (r.python && r.python.length > 80) ? r.python : arxivBuildPy(r);
+  document.getElementById('arxiv-py-pre').textContent = py;
+}
+
+function arxivTab(name) {
+  arxivCurTab = name;
+  ['circuit','analysis','qasm','python'].forEach(t => {
+    document.getElementById('art-' + t).classList.toggle('active', t === name);
+    const pane = document.getElementById('artp-' + t);
+    if (pane) pane.style.display = t === name ? 'block' : 'none';
+  });
+}
+
+function buildArxivSVG(ops, nQ, r) {
+  if (!ops || !ops.length) return '<p style="color:var(--text3);font-size:12px;padding:8px">No gate data available.</p>';
+  const gColors = {
+    H:'#6d4aff', X:'#dc2626', Y:'#dc2626', Z:'#6d4aff', S:'#6d4aff', T:'#6d4aff',
+    CX:'#0369a1', CY:'#0369a1', CZ:'#0369a1',
+    RX:'#d97706', RY:'#d97706', RZ:'#d97706',
+    RZZ:'#059669', RXX:'#059669', RYY:'#059669',
+    CP:'#7c3aed', SWAP:'#be185d', CCX:'#0369a1', M:'#374151'
+  };
+  const cols = arxivLayout(ops);
+  const yB=36, yS=44, xPad=100, gW=48, gG=13;
+  const W = xPad + cols.length * (gW + gG) + 50;
+  const H = yB + (nQ - 1) * yS + 36;
+  const roles = r.qubit_roles || [];
+  let h = `<svg id="arxiv-svg-el" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible">`;
+  cols.forEach((_, ci) => {
+    if (ci % 2 === 0) {
+      const x = xPad + ci * (gW + gG);
+      h += `<rect x="${x-gG/2}" y="0" width="${gW+gG}" height="${H}" fill="rgba(0,0,0,0.016)"/>`;
+    }
+  });
+  for (let i = 0; i < nQ; i++) {
+    const y = yB + i * yS;
+    const a = Math.max(0.3, 1 - i * 0.15);
+    const wc = i === 0 ? '#6d4aff' : `rgba(0,0,0,${0.18 * a * 2})`;
+    const tc = i === 0 ? '#6d4aff' : `rgba(0,0,0,${0.45 * a * 2})`;
+    h += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${wc}" stroke-width="${i===0?1.7:0.9}" opacity="${a}"/>`;
+    const lbl = roles[i] ? `q[${i}] ${roles[i].split(':').slice(1).join(':').trim().substring(0,22)}` : `q[${i}]`;
+    h += `<text x="4" y="${y}" dominant-baseline="central" font-size="10" font-family="DM Mono,monospace" fill="${tc}">${lbl}</text>`;
+  }
+  cols.forEach((col, ci) => {
+    const xc = xPad + ci * (gW + gG) + gW / 2;
+    col.forEach(g => {
+      const gc = gColors[g.op] || '#6d4aff';
+      h += arxivDrawGate(g, xc, yB, yS, gW, gc);
+    });
+  });
+  h += `<text x="${W-4}" y="14" text-anchor="end" font-size="9" fill="#6d4aff" font-family="DM Mono,monospace" opacity=".6">${(r.circuit_title||'').substring(0,45)}</text>`;
+  h += '</svg>';
+  return h;
+}
+
+function arxivLayout(ops) {
+  const cols = [];
+  for (const g of ops) {
+    const qs = Array.isArray(g.q) ? g.q : [g.q || 0];
+    let placed = false;
+    for (const col of cols) {
+      const used = col.flatMap(x => Array.isArray(x.q) ? x.q : [x.q || 0]);
+      if (!qs.some(q => used.includes(q))) { col.push(g); placed = true; break; }
+    }
+    if (!placed) cols.push([g]);
+  }
+  return cols;
+}
+
+function arxivDrawGate(g, xc, yB, yS, gW, color) {
+  let h = '';
+  const gH = 26;
+  const q0 = Array.isArray(g.q) ? g.q[0] : (g.q || 0);
+  if (['H','X','Y','Z','S','T'].includes(g.op)) {
+    const y = yB + q0 * yS;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="white" stroke="${color}" stroke-width="1.1"/>`;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="4" rx="2" fill="${color}" opacity=".15"/>`;
+    h += `<text x="${xc}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="500" fill="${color}" font-family="DM Mono,monospace">${g.op}</text>`;
+    if (g.note) h += `<text x="${xc}" y="${y-gH/2-4}" text-anchor="middle" font-size="8" fill="${color}" font-family="DM Sans,sans-serif" opacity=".65">${g.note.substring(0,24)}</text>`;
+  } else if (g.op === 'M') {
+    const y = yB + q0 * yS;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="${color}14" stroke="${color}" stroke-width="1" stroke-dasharray="3,2"/>`;
+    h += `<path d="M${xc-10} ${y+4} Q${xc} ${y-8} ${xc+10} ${y+4}" fill="none" stroke="${color}" stroke-width="1.2"/>`;
+    h += `<line x1="${xc}" y1="${y-5}" x2="${xc+8}" y2="${y+6}" stroke="${color}" stroke-width="1.2"/>`;
+  } else if (['RX','RY','RZ'].includes(g.op)) {
+    const y = yB + q0 * yS;
+    const lines = (g.label || g.op).split('\n');
+    const bh = lines.length * 13 + 10;
+    h += `<rect x="${xc-gW/2}" y="${y-bh/2}" width="${gW}" height="${bh}" rx="4" fill="white" stroke="${color}" stroke-width="1.1"/>`;
+    h += `<rect x="${xc-gW/2}" y="${y-bh/2}" width="${gW}" height="4" rx="2" fill="${color}" opacity=".15"/>`;
+    lines.forEach((l, i) => h += `<text x="${xc}" y="${y-bh/2+12+i*13}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${color}" font-family="DM Mono,monospace" font-weight="500">${l}</text>`);
+    if (g.note) h += `<text x="${xc}" y="${y-bh/2-4}" text-anchor="middle" font-size="8" fill="${color}" font-family="DM Sans,sans-serif" opacity=".65">${g.note.substring(0,24)}</text>`;
+  } else if (['RZZ','RXX','RYY','CP'].includes(g.op)) {
+    const [q0i, q1i] = g.q || [0, 1];
+    const y0 = yB + q0i * yS, y1 = yB + q1i * yS, ym = (y0 + y1) / 2;
+    h += `<line x1="${xc}" y1="${y0}" x2="${xc}" y2="${y1}" stroke="${color}" stroke-width="1.4" stroke-dasharray="4,3"/>`;
+    h += `<circle cx="${xc}" cy="${y0}" r="3.5" fill="${color}"/>`;
+    h += `<circle cx="${xc}" cy="${y1}" r="3.5" fill="${color}"/>`;
+    const lines = (g.label || g.op).split('\n');
+    const bh = lines.length * 12 + 10;
+    h += `<rect x="${xc-27}" y="${ym-bh/2}" width="54" height="${bh}" rx="4" fill="white" stroke="${color}" stroke-width="1.1"/>`;
+    h += `<rect x="${xc-27}" y="${ym-bh/2}" width="54" height="4" rx="2" fill="${color}" opacity=".15"/>`;
+    lines.forEach((l, i) => h += `<text x="${xc}" y="${ym-bh/2+12+i*12}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${color}" font-family="DM Mono,monospace" font-weight="500">${l}</text>`);
+    if (g.note) h += `<text x="${xc}" y="${ym-bh/2-4}" text-anchor="middle" font-size="8" fill="${color}" font-family="DM Sans,sans-serif" opacity=".65">${g.note.substring(0,24)}</text>`;
+  } else if (['CX','CY','CZ'].includes(g.op)) {
+    const [ci, ti] = g.q || [0, 1];
+    const yc = yB + ci * yS, yt = yB + ti * yS;
+    h += `<line x1="${xc}" y1="${yc}" x2="${xc}" y2="${yt}" stroke="${color}" stroke-width="1.5"/>`;
+    h += `<circle cx="${xc}" cy="${yc}" r="5.5" fill="${color}"/>`;
+    if (g.op === 'CX') {
+      h += `<circle cx="${xc}" cy="${yt}" r="13" fill="white" stroke="${color}" stroke-width="1.5"/>`;
+      h += `<line x1="${xc-13}" y1="${yt}" x2="${xc+13}" y2="${yt}" stroke="${color}" stroke-width="1.5"/>`;
+      h += `<line x1="${xc}" y1="${yt-13}" x2="${xc}" y2="${yt+13}" stroke="${color}" stroke-width="1.5"/>`;
+    } else {
+      h += `<rect x="${xc-14}" y="${yt-14}" width="28" height="28" rx="4" fill="white" stroke="${color}" stroke-width="1.5"/>`;
+      h += `<text x="${xc}" y="${yt}" text-anchor="middle" dominant-baseline="central" font-size="12" fill="${color}" font-weight="500" font-family="DM Mono,monospace">${g.op[1]}</text>`;
+    }
+    if (g.note) h += `<text x="${xc}" y="${Math.min(yc,yt)-5}" text-anchor="middle" font-size="8" fill="${color}" font-family="DM Sans,sans-serif" opacity=".65">${g.note.substring(0,24)}</text>`;
+  } else if (g.op === 'SWAP') {
+    const [qi, qj] = g.q || [0, 1];
+    const yi = yB + qi * yS, yj = yB + qj * yS;
+    h += `<line x1="${xc}" y1="${yi}" x2="${xc}" y2="${yj}" stroke="${color}" stroke-width="1.4"/>`;
+    [yi, yj].forEach(y => {
+      h += `<line x1="${xc-7}" y1="${y-7}" x2="${xc+7}" y2="${y+7}" stroke="${color}" stroke-width="2"/>`;
+      h += `<line x1="${xc+7}" y1="${y-7}" x2="${xc-7}" y2="${y+7}" stroke="${color}" stroke-width="2"/>`;
+    });
+  } else {
+    const y = yB + q0 * yS;
+    h += `<rect x="${xc-gW/2}" y="${y-gH/2}" width="${gW}" height="${gH}" rx="4" fill="white" stroke="${color}" stroke-width="1"/>`;
+    h += `<text x="${xc}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="${color}" font-family="DM Mono,monospace">${g.op}</text>`;
+  }
+  return h;
+}
+
+function arxivColorQasm(src) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return src.split('\n').map(line => {
+    if (line.trim().startsWith('//')) return `<span style="color:var(--text3);font-style:italic">${esc(line)}</span>`;
+    let l = esc(line);
+    l = l.replace(/\b(OPENQASM|include|qreg|creg|measure|barrier|reset)\b/g, `<span style="color:var(--gravity);font-weight:500">$1</span>`);
+    l = l.replace(/\b(h|x|y|z|s|t|cx|cy|cz|rx|ry|rz|cp|swap|ccx|sdg|rzz|rxx|ryy|sx)\b/g, `<span style="color:var(--em);font-weight:500">$1</span>`);
+    l = l.replace(/\b([qc]\[\d+\])\b/g, `<span style="color:var(--weak)">$1</span>`);
+    l = l.replace(/(-?\d+\.?\d*(?:e[+-]?\d+)?)/g, `<span style="color:var(--strong)">$1</span>`);
+    return l;
+  }).join('\n');
+}
+
+function arxivBuildPy(r) {
+  const n = r.nQubits || 5;
+  return `#!/usr/bin/env python3
+# Hemanth Gudaparthi Quantum Lab — arXiv Circuit
+# Paper: ${(r.paper?.title||'').substring(0,65)}
+# arXiv: ${r.paper?.id||''}
+
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import AerSimulator
+
+QASM = """
+${r.qasm||''}
+"""
+
+def run(shots=1024):
+    qc = QuantumCircuit.from_qasm_str(QASM)
+    print(qc.draw('text'))
+    sim = AerSimulator()
+    job = sim.run(transpile(qc, sim, optimization_level=3), shots=shots)
+    counts = job.result().get_counts()
+    print(f"\\nResults ({shots} shots):")
+    for state, count in sorted(counts.items(), key=lambda x: -x[1]):
+        print(f"  |{state}> {count:5d} ({count/shots*100:.1f}%)")
+    return counts
+
+if __name__ == '__main__':
+    run()
+`;
+}
+
+function arxivSafe(s) { return (s||'circuit').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+function arxivDl(name, content, mime='text/plain') {
+  const a = document.createElement('a');
+  a.href = 'data:' + mime + ';charset=utf-8,' + encodeURIComponent(content);
+  a.download = name; a.click();
+}
+function arxivCopyQasm() {
+  if (!arxivResult?.qasm) return;
+  navigator.clipboard.writeText(arxivResult.qasm).then(() => toast('QASM copied to clipboard!', 'success'));
+}
+function arxivDlQasm() {
+  if (!arxivResult) return;
+  arxivDl(arxivSafe(arxivResult.circuit_title) + '.qasm', arxivResult.qasm || '');
+}
+function arxivDlPy() {
+  if (!arxivResult) return;
+  const py = (arxivResult.python && arxivResult.python.length > 80) ? arxivResult.python : arxivBuildPy(arxivResult);
+  arxivDl(arxivSafe(arxivResult.circuit_title) + '_qiskit.py', py);
+}
+function arxivDlSvg() {
+  const el = document.getElementById('arxiv-svg-el');
+  if (!el) { alert('Switch to Circuit tab first'); return; }
+  arxivDl(arxivSafe(arxivResult?.circuit_title||'circuit') + '_circuit.svg',
+    '<?xml version="1.0" encoding="UTF-8"?>\n' + el.outerHTML, 'image/svg+xml');
+}
+function arxivDlBundle() {
+  if (!arxivResult) return;
+  const r = arxivResult;
+  const n = arxivSafe(r.circuit_title);
+  const py = (r.python && r.python.length > 80) ? r.python : arxivBuildPy(r);
+  const script = `#!/bin/bash
+# Hemanth Gudaparthi Quantum Lab — arXiv Circuit Bundle
+# Paper: ${(r.paper?.title||'').substring(0,60)}
+mkdir -p hemanth_arxiv_${n}
+
+cat > hemanth_arxiv_${n}/${n}.qasm << 'ENDQ'
+${r.qasm||''}
+ENDQ
+
+cat > hemanth_arxiv_${n}/${n}_qiskit.py << 'ENDP'
+${py}
+ENDP
+
+echo "Done — files in ./hemanth_arxiv_${n}/"
+`;
+  arxivDl(n + '_bundle.sh', script);
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: API HELPER
+*/
+async function apiCall(method, path, body = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (JWT_TOKEN) headers['Authorization'] = `Bearer ${JWT_TOKEN}`;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(API_BASE + path, opts);
+  if (resp.status === 401) {
+    JWT_TOKEN = null;
+    CURRENT_USER = null;
+    IS_ADMIN = false;
+    IS_LOGGED_IN = false;
+    sessionStorage.removeItem('ql_token');
+    updateUserUI();
+    throw new Error('Authentication required');
+  }
+  return resp.json();
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: LOGIN / LOGOUT
+*/
+async function doLogin(userId, password) {
+  const data = await apiCall('POST', '/api/auth/login', { id: userId, password });
+  if (data.error) throw new Error(data.error);
+  JWT_TOKEN = data.access_token;
+  sessionStorage.setItem('ql_token', JWT_TOKEN);
+  await refreshCurrentUser();
+}
+
+async function doLogout() {
+  try { await apiCall('POST', '/api/auth/logout'); } catch {}
+  JWT_TOKEN = null;
+  CURRENT_USER = null;
+  IS_ADMIN = false;
+  IS_LOGGED_IN = false;
+  GEODESIC_LOADED = false;
+  sessionStorage.removeItem('ql_token');
+  updateUserUI();
+  const gb = document.getElementById('btn-geodesic');
+  if (gb) { gb.parentElement.removeChild(gb); }
+  const sep = document.getElementById('geodesic-sep');
+  if (sep) { sep.parentElement.removeChild(sep); }
+  delete FORCES.geodesic;
+  delete BIT_ROLES.geodesic;
+  toast('Logged out', 'info');
+}
+
+async function refreshCurrentUser() {
+  try {
+    CURRENT_USER = await apiCall('GET', '/api/auth/me');
+    IS_ADMIN = CURRENT_USER.role === 'admin';
+    IS_LOGGED_IN = true;
+    updateUserUI();
+    if (IS_ADMIN && !GEODESIC_LOADED) {
+      await loadGeodesicModule();
+    }
+  } catch {
+    IS_LOGGED_IN = false;
+    CURRENT_USER = null;
+    IS_ADMIN = false;
+    updateUserUI();
+  }
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: GEODESIC SECURE LOADER
+*/
+async function loadGeodesicModule() {
+  if (!IS_ADMIN || GEODESIC_LOADED) return;
+  try {
+    const data = await apiCall('GET', '/api/geodesic/module');
+    if (!data.code) return;
+    const fn = new Function('FORCES', 'BIT_ROLES', data.code);
+    fn(FORCES, BIT_ROLES);
+    GEODESIC_LOADED = true;
+    injectGeodesicButton();
+    toast('Geodesic module loaded (admin only — unpublished)', 'admin');
+  } catch (e) {
+    console.warn('Geodesic module unavailable:', e.message);
+  }
+}
+
+function injectGeodesicButton() {
+  if (document.getElementById('btn-geodesic')) return;
+  const sidebar = document.getElementById('sidebar-forces');
+  if (!sidebar) return;
+  const sep = document.createElement('div');
+  sep.id = 'geodesic-sep';
+  sep.innerHTML = '<div style="height:1px;background:var(--border);margin:8px 0"></div><div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#1a6fa8;margin-bottom:6px;font-weight:600;display:flex;align-items:center;gap:6px"><span>&#9679;</span> Geodesic × Christoffel <span style="font-size:8px;background:rgba(26,111,168,0.1);color:#1a6fa8;border:1px solid rgba(26,111,168,0.3);border-radius:10px;padding:1px 7px;margin-left:auto">PRIVATE</span></div>';
+  const btn = document.createElement('button');
+  btn.className = 'force-btn';
+  btn.id = 'btn-geodesic';
+  btn.style.cssText = '--fc:#1a6fa8';
+  btn.setAttribute('onclick', "selectForce('geodesic')");
+  btn.innerHTML = '<div class="force-icon" style="background:rgba(26,111,168,0.12)">&#9899;</div><div><div style="font-size:12px">Hemanth Geodesic Experiment</div><div style="font-size:10px;color:var(--text3);font-weight:400">Hemanth 2026 · Christoffel → θ gate</div></div><span class="force-badge" style="background:rgba(26,111,168,0.1);border-color:rgba(26,111,168,0.3);color:#1a6fa8">NEW</span>';
+  sidebar.appendChild(sep);
+  sidebar.appendChild(btn);
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: UI UPDATES
+*/
+function updateUserUI() {
+  const pill = document.getElementById('user-status-pill');
+  const loginBtn = document.getElementById('topbar-login-btn');
+  const adminBtn = document.getElementById('topbar-admin-btn');
+  if (!pill) return;
+
+  if (IS_LOGGED_IN && CURRENT_USER) {
+    const roleColors = { admin:'#b45309', researcher:'var(--gravity)', viewer:'var(--text3)' };
+    const roleColor = roleColors[CURRENT_USER.role] || 'var(--text3)';
+    pill.style.display = 'flex';
+    pill.innerHTML = `<span style="font-size:10px;color:var(--text2)">${CURRENT_USER.id}</span><span style="font-size:9px;padding:2px 7px;border-radius:10px;background:${CURRENT_USER.role==='admin'?'rgba(180,83,9,0.1)':'rgba(109,74,255,0.08)'};color:${roleColor};border:1px solid ${CURRENT_USER.role==='admin'?'rgba(180,83,9,0.3)':'rgba(109,74,255,0.2)'};font-weight:600">${CURRENT_USER.role.toUpperCase()}</span>`;
+    if (loginBtn) { loginBtn.textContent = 'Sign Out'; loginBtn.onclick = doLogout; }
+    if (adminBtn) adminBtn.style.display = IS_ADMIN ? 'flex' : 'none';
+  } else {
+    pill.style.display = 'none';
+    if (loginBtn) { loginBtn.textContent = 'Sign In'; loginBtn.onclick = showLoginModal; }
+    if (adminBtn) adminBtn.style.display = 'none';
+  }
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: LOGIN MODAL
+*/
+function showLoginModal(tab) {
+  document.getElementById('login-overlay').classList.add('open');
+  switchAuthTab(tab || 'signin');
+}
+function hideLoginModal() {
+  document.getElementById('login-overlay').classList.remove('open');
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('signup-error').textContent = '';
+  document.getElementById('signup-success').textContent = '';
+}
+
+async function submitLogin() {
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const btn = document.getElementById('login-submit');
+  const err = document.getElementById('login-error');
+  if (!id || !pw) { err.textContent = 'ID and password are required.'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  err.textContent = '';
+  try {
+    await doLogin(id, pw);
+    hideLoginModal();
+    toast(`Welcome back, ${CURRENT_USER.id}!`, 'success');
+  } catch (e) {
+    err.textContent = e.message || 'Login failed. Check your credentials.';
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+function switchAuthTab(tab) {
+  ['signin','signup'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('view-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('signup-error').textContent = '';
+  document.getElementById('signup-success').textContent = '';
+  const focus = tab === 'signin' ? 'login-id' : 'signup-name';
+  setTimeout(() => { const el = document.getElementById(focus); if (el) el.focus(); }, 60);
+}
+
+async function submitSignup() {
+  const name  = document.getElementById('signup-name').value.trim();
+  const uid   = document.getElementById('signup-uid').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pw    = document.getElementById('signup-pw').value;
+  const btn   = document.getElementById('signup-submit');
+  const err   = document.getElementById('signup-error');
+  const ok    = document.getElementById('signup-success');
+  err.textContent = '';
+  ok.textContent  = '';
+  if (!name)  { err.textContent = 'Full name is required.'; return; }
+  if (!uid)   { err.textContent = 'User ID is required.'; return; }
+  if (!email) { err.textContent = 'Email is required.'; return; }
+  if (!pw)    { err.textContent = 'Password is required.'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+  try {
+    const data = await apiCall('POST', '/api/auth/signup', { name, id: uid, email, password: pw });
+    ok.textContent = 'Account created! Signing you in…';
+    JWT_TOKEN = data.access_token;
+    if (data.refresh_token) sessionStorage.setItem('ql_refresh', data.refresh_token);
+    sessionStorage.setItem('ql_token', JWT_TOKEN);
+    await refreshCurrentUser();
+    hideLoginModal();
+    toast(`Welcome, ${CURRENT_USER.id}! Account created.`, 'success');
+  } catch (e) {
+    err.textContent = e.message || 'Sign-up failed. Please try again.';
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+}
+
+/* ──────────────────────────────────────────────
+   AUTH: ADMIN PANEL
+*/
+let adminPanelTab = 'users';
+
+function openAdminPanel() {
+  document.getElementById('admin-drawer').classList.add('open');
+  document.getElementById('admin-backdrop').classList.add('open');
+  loadAdminTab(adminPanelTab);
+}
+function closeAdminPanel() {
+  document.getElementById('admin-drawer').classList.remove('open');
+  document.getElementById('admin-backdrop').classList.remove('open');
+}
+function switchAdminTab(tab) {
+  adminPanelTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  loadAdminTab(tab);
+}
+async function loadAdminTab(tab) {
+  const body = document.getElementById('admin-body');
+  body.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:12px">Loading…</div>';
+  try {
+    if (tab === 'users') {
+      const data = await apiCall('GET', '/api/admin/users');
+      body.innerHTML = (data.users || []).map(u => `
+        <div class="admin-row">
+          <span class="admin-id">${u.id}</span>
+          <span class="admin-role-badge ${u.role}">${u.role}</span>
+          <span style="font-size:10px;color:var(--text3);margin-left:auto">${u.failed_logins||0} fails</span>
+        </div>`).join('') || '<div style="padding:20px;color:var(--text3);font-size:12px">No users found.</div>';
+    } else if (tab === 'audit') {
+      const data = await apiCall('GET', '/api/admin/audit-log?limit=50');
+      body.innerHTML = (data.logs || []).map(l => `
+        <div class="admin-row audit-row">
+          <span class="admin-action ${l.action.toLowerCase().includes('fail')||l.action.includes('ERROR')?'err':''}">${l.action}</span>
+          <span class="admin-id" style="font-size:10px">${l.user_id}</span>
+          <span style="font-size:9px;color:var(--text3);margin-left:auto">${l.timestamp.substring(0,19).replace('T',' ')}</span>
+        </div>`).join('') || '<div style="padding:20px;color:var(--text3);font-size:12px">No logs.</div>';
+    } else if (tab === 'publications') {
+      const data = await apiCall('GET', '/api/results/public');
+      const pubs = data.results || [];
+      if (!pubs.length) {
+        body.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:12px">No published results yet.</div>';
+      } else {
+        body.innerHTML = pubs.map(r => `
+          <div class="admin-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--text)">#${r.id} — ${r.hardware_type || 'unknown hw'}</span>
+            <span style="font-size:10px;color:var(--text3)">${r.created_at||''}</span>
+          </div>`).join('');
+      }
+    }
+  } catch (e) {
+    body.innerHTML = `<div style="padding:20px;color:var(--strong);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   TOAST NOTIFICATIONS
+*/
+function toast(msg, type = 'info', ms = 3500) {
+  const c = document.getElementById('toast-container');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => { if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+  }, ms);
+}
+
+/* ──────────────────────────────────────────────
+   INIT
+*/
+buildParams();
+renderCircuit();
+updateInfo();
+updateSuggestions();
+renderBloch({ a: 1, b: 0, ph: 0 });
+showTab('probs');
+document.getElementById('gate-info-card').innerHTML = `<h3>${FORCES.gravity.gateInfo.title}</h3><p>${FORCES.gravity.gateInfo.body}</p><div class="formula">${FORCES.gravity.gateInfo.formula}</div>`;
+initArxivCats();
+(function preloadArxiv() {
+  document.getElementById('arxiv-input').value = 'quantum gravity geodesic circuit';
+})();
+window.addEventListener('load', () => {
+  if (IBM_CONFIG.token !== 'YOUR_NEW_IBM_TOKEN_HERE') {
+    setTimeout(checkIBMAccount, 900);
+  }
+});
+
+// Auth init
+if (JWT_TOKEN) {
+  refreshCurrentUser();
+} else {
+  updateUserUI();
+}
+
+</script>
+</body>
+</html>

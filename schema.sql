@@ -5,6 +5,8 @@
 -- ─── USERS ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
     id                  VARCHAR(50)  PRIMARY KEY,
+    name                VARCHAR(100),
+    email               VARCHAR(255) UNIQUE,
     password_hash       VARCHAR(255) NOT NULL,
     role                VARCHAR(20)  NOT NULL DEFAULT 'researcher'
                             CHECK (role IN ('admin', 'researcher', 'viewer')),
@@ -15,6 +17,11 @@ CREATE TABLE IF NOT EXISTS users (
     login_attempts      INTEGER      NOT NULL DEFAULT 0,
     locked_until        TIMESTAMP
 );
+
+-- Migration helper: add name/email to existing databases that predate this schema.
+-- Safe to run on a fresh DB (columns already exist).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS name  VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
 
 -- ─── SESSIONS (JWT revocation list) ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sessions (

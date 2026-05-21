@@ -7,8 +7,10 @@ Results are NEVER public until an admin calls POST /api/results/<id>/approve.
 """
 
 import json
+import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -21,10 +23,20 @@ from auth import (
 )
 import research as wf
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # ── CORS (allow local HTML file and localhost) ────────────────────────────
+    CORS(app, resources={r"/api/*": {
+        "origins": ["http://localhost", "http://127.0.0.1",
+                    "http://localhost:*", "http://127.0.0.1:*",
+                    "null"],          # null = file:// origin
+        "supports_credentials": False,
+    }})
 
     # ── Extensions ────────────────────────────────────────────────────────────
     db.init_app(app)
@@ -91,6 +103,68 @@ def create_app(config_class=Config):
         return jsonify(user.to_public_dict()), 200
 
     # ── Admin: create user (bootstrap only) ───────────────────────────────────
+    @app.route("/api/auth/signup", methods=["POST"])
+    @limiter.limit("5 per minute")
+    def api_signup():
+        """
+        POST /api/auth/signup
+        Body: {"name": "...", "id": "...", "email": "...", "password": "..."}
+        Creates a researcher account and returns JWT tokens (auto-login).
+        Signup is open; role is always 'researcher' — never admin.
+        """
+        import re as _re
+        body     = request.get_json(silent=True) or {}
+        name     = body.get("name",     "").strip()
+        user_id  = body.get("id",       "").strip()
+        email    = body.get("email",    "").strip().lower()
+        password = body.get("password", "")
+
+        # ── Field-level validation ────────────────────────────────────────────
+        if not all([name, user_id, email, password]):
+            return jsonify({"error": "All fields (name, id, email, password) are required"}), 400
+        if len(name) > 100:
+            return jsonify({"error": "Name must be 100 characters or fewer"}), 400
+        if not _re.match(r'^[a-zA-Z0-9_\-]{3,50}$', user_id):
+            return jsonify({
+                "error": "User ID must be 3–50 characters: letters, numbers, _ or - only"
+            }), 400
+        if not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+            return jsonify({"error": "Invalid email address"}), 400
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters"}), 400
+        if len(password) > 128:
+            return jsonify({"error": "Password is too long (max 128 characters)"}), 400
+
+        # ── Uniqueness checks ─────────────────────────────────────────────────
+        if User.query.get(user_id):
+            return jsonify({"error": "User ID is already taken"}), 409
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "Email is already registered"}), 409
+
+        # ── Create user ───────────────────────────────────────────────────────
+        user = User(
+            id            = user_id,
+            name          = name,
+            email         = email,
+            password_hash = hash_password(password),
+            role          = "researcher",     # signup never grants admin
+        )
+        db.session.add(user)
+        db.session.commit()
+        audit(user_id, "SIGNUP", "user", user_id, {"name": name, "email": email})
+
+        # Auto-login: issue tokens so the client is signed in immediately.
+        tokens, err = login(user_id, password)
+        if err:
+            # Unlikely, but fall back gracefully.
+            return jsonify({"message": "Account created. Please sign in.", "user_id": user_id}), 201
+
+        return jsonify({
+            "message": "Account created successfully",
+            "user": user.to_public_dict(),
+            **tokens,
+        }), 201
+
     @app.route("/api/auth/users", methods=["POST"])
     @admin_required
     def api_create_user():
@@ -489,6 +563,47 @@ def create_app(config_class=Config):
              "ip": l.ip_address, "timestamp": l.timestamp.isoformat()}
             for l in logs
         ]}), 200
+
+    @app.route("/api/admin/users", methods=["GET"])
+    @admin_required
+    def api_list_users():
+        """GET /api/admin/users — admin only, list all users."""
+        users = User.query.all()
+        return jsonify({"users": [u.to_public_dict() for u in users]}), 200
+
+    # =========================================================================
+    # GEODESIC MODULE  (UNPUBLISHED — admin only)
+    # =========================================================================
+
+    @app.route("/api/geodesic/module", methods=["GET"])
+    @admin_required
+    def api_geodesic_module():
+        """
+        GET /api/geodesic/module — ADMIN ONLY.
+        Returns the JS source of the unpublished Geodesic Experiment module.
+        This endpoint exists to ensure the geodesic module code never appears
+        in the public HTML file. All access is JWT-gated and audit-logged.
+        """
+        module_path = os.path.join(_HERE, "geodesic_module.js")
+        if not os.path.exists(module_path):
+            return jsonify({"error": "Geodesic module file not found on server."}), 404
+
+        with open(module_path, "r", encoding="utf-8") as fh:
+            code = fh.read()
+
+        user_id = get_jwt_identity()
+        audit(user_id, "GEODESIC_MODULE_ACCESSED", "module", "geodesic")
+        return jsonify({"code": code, "published": False}), 200
+
+    @app.route("/api/geodesic/status", methods=["GET"])
+    @admin_required
+    def api_geodesic_status():
+        """GET /api/geodesic/status — admin only, returns publication status."""
+        return jsonify({
+            "published": False,
+            "label": "Hemanth Geodesic Experiment — Christoffel Gate Angles (2026)",
+            "note": "Pending publication. Access restricted to admin only.",
+        }), 200
 
     return app
 

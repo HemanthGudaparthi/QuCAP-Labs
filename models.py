@@ -11,6 +11,8 @@ class User(db.Model):
     __tablename__ = "users"
 
     id             = db.Column(db.String(50),  primary_key=True)
+    name           = db.Column(db.String(100), nullable=True)
+    email          = db.Column(db.String(255), nullable=True, unique=True)
     password_hash  = db.Column(db.String(255), nullable=False)
     role           = db.Column(db.String(20),  nullable=False, default="researcher")
     ilp_tokens     = db.Column(db.Integer,     nullable=False, default=0)
@@ -33,7 +35,14 @@ class User(db.Model):
         return False
 
     def to_public_dict(self):
-        return {"id": self.id, "role": self.role, "ilp_tokens": self.ilp_tokens}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "role": self.role,
+            "ilp_tokens": self.ilp_tokens,
+            "failed_logins": self.login_attempts,
+        }
 
 
 class Session(db.Model):
