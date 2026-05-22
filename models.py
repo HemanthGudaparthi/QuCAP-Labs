@@ -10,17 +10,18 @@ def utcnow():
 class User(db.Model):
     __tablename__ = "users"
 
-    id             = db.Column(db.String(50),  primary_key=True)
-    name           = db.Column(db.String(100), nullable=True)
-    email          = db.Column(db.String(255), nullable=True, unique=True)
-    password_hash  = db.Column(db.String(255), nullable=False)
-    role           = db.Column(db.String(20),  nullable=False, default="researcher")
-    ilp_tokens     = db.Column(db.Integer,     nullable=False, default=0)
-    created_at     = db.Column(db.DateTime,    nullable=False, default=utcnow)
-    last_login     = db.Column(db.DateTime)
-    is_active      = db.Column(db.Boolean,     nullable=False, default=True)
-    login_attempts = db.Column(db.Integer,     nullable=False, default=0)
-    locked_until   = db.Column(db.DateTime)
+    id               = db.Column(db.String(50),  primary_key=True)
+    name             = db.Column(db.String(100), nullable=True)
+    email            = db.Column(db.String(255), nullable=True, unique=True)
+    password_hash    = db.Column(db.String(255), nullable=False)
+    role             = db.Column(db.String(20),  nullable=False, default="researcher")
+    ilp_tokens       = db.Column(db.Integer,     nullable=False, default=0)
+    created_at       = db.Column(db.DateTime,    nullable=False, default=utcnow)
+    last_login       = db.Column(db.DateTime)
+    is_active        = db.Column(db.Boolean,     nullable=False, default=True)
+    login_attempts   = db.Column(db.Integer,     nullable=False, default=0)
+    locked_until     = db.Column(db.DateTime)
+    geodesic_access  = db.Column(db.Boolean,     nullable=False, default=False)
 
     research     = db.relationship("Research",          back_populates="user", lazy="dynamic")
     experiments  = db.relationship("QuantumExperiment", back_populates="user",
@@ -42,6 +43,7 @@ class User(db.Model):
             "role": self.role,
             "ilp_tokens": self.ilp_tokens,
             "failed_logins": self.login_attempts,
+            "geodesic_access": self.geodesic_access,
         }
 
 
@@ -174,3 +176,18 @@ class AuditLog(db.Model):
     detail        = db.Column(db.Text)        # JSON
     ip_address    = db.Column(db.String(45))
     timestamp     = db.Column(db.DateTime,    nullable=False, default=utcnow)
+
+
+class GeodesicAccessRequest(db.Model):
+    __tablename__ = "geodesic_access_requests"
+
+    id           = db.Column(db.Integer,     primary_key=True, autoincrement=True)
+    user_id      = db.Column(db.String(50),  db.ForeignKey("users.id"), nullable=False)
+    message      = db.Column(db.Text)
+    status       = db.Column(db.String(20),  nullable=False, default="pending")  # pending/approved/denied
+    requested_at = db.Column(db.DateTime,    nullable=False, default=utcnow)
+    reviewed_at  = db.Column(db.DateTime)
+    reviewed_by  = db.Column(db.String(50),  db.ForeignKey("users.id"))
+
+    user     = db.relationship("User", foreign_keys=[user_id])
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by])

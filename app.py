@@ -16,7 +16,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from config import Config
-from models import db, User
+from models import db, User, GeodesicAccessRequest
 from auth import (
     login, logout, is_token_revoked, audit,
     admin_required, researcher_required, hash_password,
@@ -572,38 +572,152 @@ def create_app(config_class=Config):
         return jsonify({"users": [u.to_public_dict() for u in users]}), 200
 
     # =========================================================================
-    # GEODESIC MODULE  (UNPUBLISHED — admin only)
+    # GEODESIC MODULE  (UNPUBLISHED — admin + approved users)
     # =========================================================================
 
+    def _send_geodesic_email(user_id, user_name, user_email, message):
+        import smtplib, ssl
+        from email.message import EmailMessage
+        smtp_host = os.environ.get("SMTP_HOST", "")
+        smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        smtp_user = os.environ.get("SMTP_USER", "")
+        smtp_pass = os.environ.get("SMTP_PASSWORD", "")
+        admin_email = os.environ.get("ADMIN_EMAIL", "gudaparthi.hemanth@gmail.com")
+        if not (smtp_host and smtp_user and smtp_pass):
+            return
+        msg = EmailMessage()
+        msg["Subject"] = f"[QuantumLabs] Geodesic Access Request from {user_id}"
+        msg["From"] = smtp_user
+        msg["To"] = admin_email
+        msg.set_content(
+            f"New Geodesic Module Access Request\n\n"
+            f"User ID : {user_id}\n"
+            f"Name    : {user_name or 'N/A'}\n"
+            f"Email   : {user_email or 'N/A'}\n"
+            f"Message : {message or 'No message provided'}\n\n"
+            f"Review in Admin Panel > Geodesic tab.\n"
+        )
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP(smtp_host, smtp_port) as s:
+            s.starttls(context=ctx)
+            s.login(smtp_user, smtp_pass)
+            s.send_message(msg)
+
+    @app.route("/api/geodesic/request-access", methods=["POST"])
+    @researcher_required
+    @limiter.limit("3 per hour")
+    def api_geodesic_request_access():
+        """POST /api/geodesic/request-access — any logged-in user may request."""
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if user and (user.is_admin() or user.geodesic_access):
+            return jsonify({"message": "You already have access."}), 200
+        existing = GeodesicAccessRequest.query.filter_by(
+            user_id=user_id, status="pending"
+        ).first()
+        if existing:
+            return jsonify({"message": "Request already pending review."}), 409
+        data = request.get_json(silent=True) or {}
+        message = (data.get("message") or "")[:500]
+        req = GeodesicAccessRequest(user_id=user_id, message=message)
+        db.session.add(req)
+        db.session.commit()
+        audit(user_id, "GEODESIC_ACCESS_REQUESTED", "geodesic", str(req.id))
+        try:
+            _send_geodesic_email(
+                user_id,
+                user.name if user else None,
+                user.email if user else None,
+                message,
+            )
+        except Exception:
+            pass
+        return jsonify({"message": "Request submitted. Hemanth will review it."}), 201
+
     @app.route("/api/geodesic/module", methods=["GET"])
-    @admin_required
+    @researcher_required
     def api_geodesic_module():
-        """
-        GET /api/geodesic/module — ADMIN ONLY.
-        Returns the JS source of the unpublished Geodesic Experiment module.
-        This endpoint exists to ensure the geodesic module code never appears
-        in the public HTML file. All access is JWT-gated and audit-logged.
-        """
+        """GET /api/geodesic/module — admin or approved users only."""
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if not user or (not user.is_admin() and not user.geodesic_access):
+            audit(user_id, "GEODESIC_MODULE_DENIED", "module", "geodesic")
+            return jsonify({"error": "Access not granted."}), 403
         module_path = os.path.join(_HERE, "geodesic_module.js")
         if not os.path.exists(module_path):
-            return jsonify({"error": "Geodesic module file not found on server."}), 404
-
+            return jsonify({"error": "Module file not found on server."}), 404
         with open(module_path, "r", encoding="utf-8") as fh:
             code = fh.read()
-
-        user_id = get_jwt_identity()
         audit(user_id, "GEODESIC_MODULE_ACCESSED", "module", "geodesic")
         return jsonify({"code": code, "published": False}), 200
 
     @app.route("/api/geodesic/status", methods=["GET"])
-    @admin_required
+    @researcher_required
     def api_geodesic_status():
-        """GET /api/geodesic/status — admin only, returns publication status."""
+        """GET /api/geodesic/status — returns the current user's access level."""
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        has_access = bool(user and (user.is_admin() or user.geodesic_access))
+        pending = bool(
+            user and GeodesicAccessRequest.query.filter_by(
+                user_id=user_id, status="pending"
+            ).first()
+        )
         return jsonify({
             "published": False,
-            "label": "Hemanth Geodesic Experiment — Christoffel Gate Angles (2026)",
-            "note": "Pending publication. Access restricted to admin only.",
+            "has_access": has_access,
+            "request_pending": pending,
         }), 200
+
+    @app.route("/api/admin/geodesic/requests", methods=["GET"])
+    @admin_required
+    def api_admin_geodesic_requests():
+        reqs = GeodesicAccessRequest.query.order_by(
+            GeodesicAccessRequest.requested_at.desc()
+        ).all()
+        return jsonify({"requests": [{
+            "id": r.id, "user_id": r.user_id, "status": r.status,
+            "message": r.message,
+            "requested_at": r.requested_at.isoformat(),
+            "reviewed_at": r.reviewed_at.isoformat() if r.reviewed_at else None,
+            "reviewed_by": r.reviewed_by,
+        } for r in reqs]}), 200
+
+    @app.route("/api/admin/geodesic/approve/<target_id>", methods=["POST"])
+    @admin_required
+    def api_admin_geodesic_approve(target_id):
+        from models import utcnow
+        admin_id = get_jwt_identity()
+        target = User.query.get(target_id)
+        if not target:
+            return jsonify({"error": "User not found."}), 404
+        target.geodesic_access = True
+        req = GeodesicAccessRequest.query.filter_by(
+            user_id=target_id, status="pending"
+        ).first()
+        if req:
+            req.status = "approved"
+            req.reviewed_at = utcnow()
+            req.reviewed_by = admin_id
+        db.session.commit()
+        audit(admin_id, "GEODESIC_ACCESS_APPROVED", "user", target_id)
+        return jsonify({"message": f"Access granted to {target_id}."}), 200
+
+    @app.route("/api/admin/geodesic/deny/<target_id>", methods=["POST"])
+    @admin_required
+    def api_admin_geodesic_deny(target_id):
+        from models import utcnow
+        admin_id = get_jwt_identity()
+        req = GeodesicAccessRequest.query.filter_by(
+            user_id=target_id, status="pending"
+        ).first()
+        if req:
+            req.status = "denied"
+            req.reviewed_at = utcnow()
+            req.reviewed_by = admin_id
+        db.session.commit()
+        audit(admin_id, "GEODESIC_ACCESS_DENIED", "user", target_id)
+        return jsonify({"message": f"Request from {target_id} denied."}), 200
 
     return app
 
