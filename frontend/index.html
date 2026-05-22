@@ -1965,7 +1965,7 @@ async function doLogout() {
 }
 async function refreshCurrentUser() {
   const data = await apiCall('GET', '/api/auth/me');
-  CURRENT_USER = data.user;
+  CURRENT_USER = data;
   IS_ADMIN     = CURRENT_USER.role === 'admin';
   IS_LOGGED_IN = true;
   GEODESIC_ACCESS = IS_ADMIN || CURRENT_USER.geodesic_access;
