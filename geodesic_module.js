@@ -13,8 +13,6 @@
 //   Every Trotter layer has DIFFERENT gate angles because r changes.
 // ============================================================
 
-(function(FORCES, BIT_ROLES) {
-
 FORCES.geodesic = {
   color: '#1a6fa8',
   label: 'Hemanth Geodesic Experiment — Christoffel Gate Angles (2026)',
@@ -238,4 +236,3 @@ if (typeof BIT_ROLES !== 'undefined') {
   };
 }
 
-})(window.FORCES, window.BIT_ROLES);
