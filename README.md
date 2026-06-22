@@ -646,17 +646,17 @@ Login
   └─ Submit Research (title + equations)
        └─ Novelty Check
             ├─ Not novel → retrieve existing circuit from RD (prior_circuit_id returned)
-            │                  └─ Build Circuit (extend existing circuit) ──────────────┐
-            └─ Novel → Novelty Token issued                                             │
-                 └─ Select Hardware (electron | photonic | neutrino)                   │
-                      └─ Suitability Check                                             │
-                           ├─ Not suitable → stop                                      │
-                           └─ Suitable                                                 │
-                                └─ Build Circuit (Claude AI / heuristic) ◄─────────────┘
+            │                  └─ Build Circuit (extend existing circuit) ─────────────────────────────────────────────────────┐
+            └─ Novel → Novelty Token issued                                                                                    │
+                 └─ Select Hardware (electron | photonic | neutrino)                                                           │
+                      └─ Suitability Check                                                                                     │
+                           ├─ Not suitable → stop                                                                              │
+                           └─ Suitable                                                                                         │
+                                └─ Build Circuit (Dual Deep-Reinforcemet Leanring approach (Gudaparthi et al.)) ◄──────────────┘
                                      ├─ Not a quantum application → classical suggestion returned
                                      └─ Run Experiment (shots)
                                           ├─ Reliability < 0.6 → Extend Circuit ──┐
-                                          │                                        │ (loop)
+                                          │                                       │ (loop)
                                           └─ Reliability ≥ 0.6                    ┘
                                                └─ Request Publication (researcher)
                                                     └─ Approve Publication (admin only)
