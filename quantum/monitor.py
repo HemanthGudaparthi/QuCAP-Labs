@@ -75,14 +75,19 @@ class IntegrationMonitor:
         self._probes[name] = probe_fn
 
     def _register_defaults(self) -> None:
-        """Register all built-in module probes."""
+        """
+        Register built-in module probes.
+
+        Scope is intentionally limited to the RL workflow and circuit-generation
+        chain. Database connectivity and external server reachability (IBM Quantum,
+        Google Drive) are excluded — those depend on credentials and network access
+        that are not guaranteed in CI or offline environments.
+        """
         self.register("rl_environment",    self._probe_rl_environment)
         self.register("rl_dual_agent",     self._probe_rl_dual_agent)
         self.register("rl_circuit",        self._probe_rl_circuit)
         self.register("ai_circuit",        self._probe_ai_circuit)
         self.register("hardware_selector", self._probe_hardware_selector)
-        self.register("electron_backend",  self._probe_electron_backend)
-        self.register("db1_storage",       self._probe_db1_storage)
 
     # ── Check execution ───────────────────────────────────────────────────
 
@@ -182,17 +187,9 @@ class IntegrationMonitor:
         if not ranking or not isinstance(ranking, list):
             raise ValueError(f"rank_hardware returned: {ranking!r}")
 
-    def _probe_electron_backend(self) -> None:
-        """Verify ElectronBackend can be instantiated without error."""
-        from quantum.electron import ElectronBackend
-        backend = ElectronBackend()
-        _ = backend.available   # property access must not raise
-
-    def _probe_db1_storage(self) -> None:
-        """Verify DB1Storage can be instantiated without error."""
-        from storage.db1_gdrive import DB1Storage
-        store = DB1Storage()
-        _ = store.available     # property access must not raise
+    # electron_backend and db1_storage probes intentionally omitted:
+    # both require external credentials / network connectivity and are
+    # not part of the RL workflow health check.
 
 
 # ── Singleton ─────────────────────────────────────────────────────────────────

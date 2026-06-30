@@ -193,11 +193,11 @@ def test_monitor_ai_circuit_probe():
 
 
 def test_monitor_check_all_returns_report():
-    """check_all() must return a HealthReport with a populated module list."""
+    """check_all() must return a HealthReport covering all RL-workflow modules."""
     from quantum.monitor import get_monitor
     report = get_monitor().check_all()
     assert hasattr(report, "all_ok")
-    assert len(report.modules) >= 7
+    assert len(report.modules) >= 5   # rl_environment, rl_dual_agent, rl_circuit, ai_circuit, hardware_selector
     summary = report.summary()
     assert "Monitor" in summary
 
