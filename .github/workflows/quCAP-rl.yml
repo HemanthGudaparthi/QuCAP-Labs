@@ -1,0 +1,190 @@
+name: QuCAP Labs — Dual Deep RL Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 3 * * 0'   # Weekly: full health check + RL retrain
+  workflow_dispatch:
+    inputs:
+      train_episodes:
+        description: Number of RL training episodes
+        required: false
+        default: '200'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+
+  # ── 1. Lint ──────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install ruff
+        run: pip install ruff
+      - name: Lint quantum/ and storage/
+        run: ruff check quantum/ storage/ --select E,F,W --ignore E501
+
+  # ── 2. Unit tests ─────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+        env:
+          SECRET_KEY: ci-secret-key-not-for-production
+          JWT_SECRET_KEY: ci-jwt-key-not-for-production
+
+  # ── 3. RL Integration Monitor (error-checking agent) ─────────────────────────
+  rl-integration-monitor:
+    name: RL Integration Monitor
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    env:
+      SECRET_KEY: ci-key
+      JWT_SECRET_KEY: ci-jwt-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Run integration monitor
+        run: |
+          python - <<'PYEOF'
+          import sys, os
+          sys.path.insert(0, '.')
+          os.environ.setdefault('SECRET_KEY', 'ci')
+          os.environ.setdefault('JWT_SECRET_KEY', 'ci')
+
+          from quantum.monitor import get_monitor
+
+          monitor = get_monitor()
+          report  = monitor.check_all()
+          print(report.summary())
+
+          # Modules that must pass — no external credentials required
+          required = ["rl_environment", "rl_dual_agent", "ai_circuit"]
+          failed   = [m for m in report.modules
+                      if m.name in required and not m.ok]
+          if failed:
+              for m in failed:
+                  print(f"REQUIRED FAIL: {m.name}: {m.error}")
+              sys.exit(1)
+          print("\nAll required modules healthy.")
+          PYEOF
+
+  # ── 4. RL Circuit Validation ──────────────────────────────────────────────────
+  rl-circuit-validate:
+    name: RL Circuit Validation
+    runs-on: ubuntu-latest
+    needs: rl-integration-monitor
+    env:
+      SECRET_KEY: ci-key
+      JWT_SECRET_KEY: ci-jwt-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Validate circuit generation across all input types
+        run: |
+          python - <<'PYEOF'
+          import sys
+          sys.path.insert(0, '.')
+          from quantum.ai_circuit import build_circuit
+
+          test_cases = [
+              ("Quantum Phase Estimation", "U|ψ⟩ = e^(2πiφ)|ψ⟩", "research"),
+              ("cryptography",             "",                      "topic"),
+              ("Build a 3-qubit GHZ state","",                     "query"),
+              ("Grover Search",            "∑_x |x⟩",              "research"),
+              ("Variational Quantum Eigensolver",
+               "H = ∑_ij h_ij σ_i σ_j",                           "research"),
+          ]
+
+          failures = []
+          for title, eq, itype in test_cases:
+              try:
+                  result = build_circuit(title, eq, input_type=itype)
+                  if "OPENQASM" not in result.qasm:
+                      failures.append(f"[{itype}] {title}: invalid QASM")
+                  else:
+                      print(f"OK  [{itype}]  {title[:50]}  "
+                            f"conf={result.ai_confidence:.2f}  "
+                            f"correct={result.theoretically_correct}")
+              except Exception as exc:
+                  failures.append(f"[{itype}] {title}: {exc}")
+
+          if failures:
+              for f in failures:
+                  print(f"FAIL: {f}")
+              sys.exit(1)
+          print(f"\nAll {len(test_cases)} circuits generated successfully.")
+          PYEOF
+
+  # ── 5. RL Training (schedule or workflow_dispatch only) ───────────────────────
+  rl-train:
+    name: RL Model Training
+    runs-on: ubuntu-latest
+    needs: rl-circuit-validate
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      SECRET_KEY: ci-key
+      JWT_SECRET_KEY: ci-jwt-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Train Dual DQN agent
+        run: |
+          python - <<'PYEOF'
+          import sys
+          sys.path.insert(0, '.')
+          from quantum.rl_circuit import train_agent
+
+          episodes = int("${{ github.event.inputs.train_episodes || '200' }}")
+          print(f"Training Dual DQN for {episodes} episodes...")
+          rewards = train_agent(n_episodes=episodes)
+          mean_last_10 = sum(rewards[-10:]) / min(10, len(rewards))
+          print(f"Training complete.")
+          print(f"  Final episode reward : {rewards[-1]:.2f}")
+          print(f"  Mean last-10 reward  : {mean_last_10:.2f}")
+          print(f"  Best episode reward  : {max(rewards):.2f}")
+          PYEOF
+      - name: Upload trained models
+        uses: actions/upload-artifact@v4
+        with:
+          name: rl-models-${{ github.run_number }}
+          path: quantum/rl/models/
+          retention-days: 30

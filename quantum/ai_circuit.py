@@ -143,23 +143,32 @@ def build_circuit(title: str, equations: str,
                   prior_qasm: str | None = None,
                   input_type: str = "research") -> CircuitResult:
     """
-    Build a quantum circuit.
+    Build a quantum circuit. Three-tier fallback — no single point of failure.
 
-    input_type controls how the AI interprets the input:
-      "research" — title + equations encode a formal research problem
-      "topic"    — title is a domain keyword (e.g. "cryptography")
-      "query"    — title is a free-form question or instruction
+    Tier 1: Dual Deep RL agent (quantum/rl_circuit.py) — primary
+    Tier 2: Claude AI (claude-opus-4-7) when ANTHROPIC_API_KEY is set
+    Tier 3: Heuristic gate analysis (always available, zero dependencies)
 
-    Uses Claude when ANTHROPIC_API_KEY is set; falls back to heuristics otherwise.
-    `prior_qasm` triggers extension mode (build upon existing results).
+    input_type: "research" | "topic" | "query"
+    prior_qasm: if provided, extends the existing circuit rather than building fresh
     """
+    # Tier 1: Dual Deep RL
+    try:
+        from quantum.rl_circuit import build_circuit_rl, is_rl_available
+        if is_rl_available():
+            return build_circuit_rl(title, equations, prior_qasm, input_type)
+    except Exception as exc:
+        print(f"[ai_circuit] RL build failed ({exc}); trying Claude.")
+
+    # Tier 2: Claude AI
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if api_key and _HAS_ANTHROPIC:
         try:
             return _build_with_claude(title, equations, prior_qasm, api_key, input_type)
         except Exception as exc:
-            print(f"[ai_circuit] Claude call failed ({exc}); falling back to heuristics.")
+            print(f"[ai_circuit] Claude failed ({exc}); falling back to heuristics.")
 
+    # Tier 3: Heuristic (always available)
     return _build_heuristic(title, equations, prior_qasm)
 
 
