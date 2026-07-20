@@ -2624,7 +2624,7 @@ measure q[4] -> c[4];`;
         const tag=schw?`r=${st.r.toFixed(2)}`:'flat';
         g.push({op:'RY',q:[qa],label:`RY\n(${st.ph.toFixed(3)})`,note:`phi step${st.s} ${tag}`});
         g.push({op:'RZ',q:[qa],label:`RZ\n(${st.th.toFixed(3)})`,note:`theta step${st.s} ${tag}`});
-        g.push({op:'CX',q:[qa,qb],label:'',note:`Trotter even/odd ${st.s}`});
+        if(schw) g.push({op:'CX',q:[qa,qb],label:'',note:`Trotter even/odd ${st.s}`});
         if(schw && st.tidal>0.0005){
           g.push({op:'RZZ',q:[0,2],label:`RZZ\n(${st.tidal.toFixed(4)})`,note:`Gamma^r_tt s=${st.s}`});
         }
@@ -2649,7 +2649,7 @@ measure q[4] -> c[4];`;
         body+=`// theta=${st.th.toFixed(6)} phi=${st.ph.toFixed(6)}  (${schw?'SCHWARZSCHILD: unique per layer':'FLAT: same every layer'})\n`;
         body+=`ry(${st.ph.toFixed(6)}) q[${qa}];\n`;
         body+=`rz(${st.th.toFixed(6)}) q[${qa}];\n`;
-        body+=`cx q[${qa}], q[${qb}];\n`;
+        if(schw) body+=`cx q[${qa}], q[${qb}];\n`;
         if(schw && st.tidal>0.0005){
           body+=`// Christoffel tidal Gamma^r_tt*dt/2=${st.tidal.toFixed(6)}\n`;
           body+=`cx q[0], q[2];\nrz(${st.tidal.toFixed(6)}) q[2]; // tidal\ncx q[0], q[2];\n`;
@@ -2694,7 +2694,7 @@ measure q[3] -> c[3];`.replace('${body}',body);
         body+=`    # step ${st.s}: r=${st.r.toFixed(3)} vj=${st.vj.toFixed(4)} theta=${st.th.toFixed(5)} phi=${st.ph.toFixed(5)}\n`;
         body+=`    qc.ry(${st.ph.toFixed(6)}, ${qa})\n`;
         body+=`    qc.rz(${st.th.toFixed(6)}, ${qa})\n`;
-        body+=`    qc.cx(${qa}, ${qb})\n`;
+        if(schw) body+=`    qc.cx(${qa}, ${qb})\n`;
         if(schw && st.tidal>0.0005) body+=`    qc.cx(0,2); qc.rz(${st.tidal.toFixed(6)},2); qc.cx(0,2)\n`;
         if(schw) body+=`    qc.rz(${st.tdil.toFixed(6)}, 3)\n`;
       }
